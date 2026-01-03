@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { logout } from "../(auth)/actions";
-import { createSupabaseServerClient } from "../lib/supabase-server";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 export default async function DashboardLayout({
   children,

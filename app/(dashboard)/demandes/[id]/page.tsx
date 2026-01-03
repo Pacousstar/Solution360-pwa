@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "../../../lib/supabase-server";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -100,15 +100,28 @@ export default async function DemandeDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  // Récupérer la demande
-  const { data: demande, error } = await supabase
+  // ✅ MODIFIÉ : Admin voit TOUT, client voit SEULEMENT les siennes
+  const { data: demande, error: requestError } = await supabase
     .from("requests")
     .select("*")
     .eq("id", id)
+    .single();
+
+  if (requestError || !demande) {
+    notFound();
+  }
+
+  // ✅ NOUVEAU : Vérifier si admin
+  const { data: adminCheck } = await supabase
+    .from("admin_users")
+    .select("is_admin")
     .eq("user_id", user.id)
     .single();
 
-  if (error || !demande) {
+  const isAdmin = adminCheck?.is_admin || false;
+
+  // ✅ MODIFIÉ : Admin voit TOUTES les demandes, client QUE les siennes
+  if (!isAdmin && demande.user_id !== user.id) {
     notFound();
   }
 
@@ -123,7 +136,7 @@ export default async function DemandeDetailPage({ params }: PageProps) {
 
   const analysis = (analysisData as AnalysisRow) || null;
 
-  // ✅ NOUVEAU : Récupérer les livrables finaux
+  // Récupérer les livrables finaux
   const { data: deliverablesData } = await supabase
     .from("deliverables")
     .select("*")
@@ -131,6 +144,7 @@ export default async function DemandeDetailPage({ params }: PageProps) {
     .order("created_at", { ascending: false });
 
   const deliverables = (deliverablesData || []) as DeliverableRow[];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-sky-50 px-4 py-8">
       <div className="mx-auto max-w-4xl">
@@ -360,7 +374,7 @@ export default async function DemandeDetailPage({ params }: PageProps) {
               </section>
             )}
 
-            {/* ✅ NOUVEAU : Section Livrables finaux */}
+            {/* ✅ LIVRABLES FINAUX */}
             {request.status === "delivered" && deliverables.length > 0 && (
               <section className="border-t border-gray-200 pt-6">
                 <div className="flex items-center gap-3 mb-4">
