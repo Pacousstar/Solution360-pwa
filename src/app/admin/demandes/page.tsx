@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserRole } from "@/lib/admin/permissions";
 import DemandesAdminClient from "./DemandesAdminClient";
+import { logger } from "@/lib/logger";
 
 export default async function AdminDemandesPage() {
   // Client user pour l'authentification
@@ -17,13 +18,12 @@ export default async function AdminDemandesPage() {
     redirect("/login");
   }
 
-  // Vérifier les permissions
-  const roleData = await getUserRole(user.id);
-  const isAdmin =
-    roleData?.role === "admin" || roleData?.role === "super_admin";
+  // ✅ Utilisation de la logique centralisée
+  const { isAdmin, isSuperAdmin } = await import('@/lib/admin/permissions');
+  const adminStatus = await isAdmin(user.id, user.email || undefined);
+  const superAdminStatus = await isSuperAdmin(user.id);
 
-  const adminEmails = ["pacous2000@gmail.com", "admin@solution360.app"];
-  if (!isAdmin && !adminEmails.includes(user.email || "")) {
+  if (!adminStatus) {
     redirect("/demandes");
   }
 
@@ -40,19 +40,19 @@ export default async function AdminDemandesPage() {
     .order("created_at", { ascending: false });
 
   if (demandesError) {
-    console.error("Error fetching requests:", demandesError);
+    logger.error("Error fetching requests:", demandesError);
   }
 
-  // ✅ Enrichir avec les infos utilisateurs
+  // Enrichir avec les infos utilisateurs
   const enrichedDemandes = await Promise.all(
     (demandes || [])
-      .filter((demande) => demande.user_id) // ← AJOUTER CE FILTRE
+      .filter((demande) => demande.user_id)
       .map(async (demande: any) => {
         // Vérifier que user_id est valide (format UUID)
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         
         if (!demande.user_id || !uuidRegex.test(demande.user_id)) {
-          console.warn(`Invalid user_id for request ${demande.id}: ${demande.user_id}`);
+          logger.warn(`Invalid user_id for request ${demande.id}: ${demande.user_id}`);
           return {
             ...demande,
             user: {
@@ -68,7 +68,7 @@ export default async function AdminDemandesPage() {
           );
   
           if (userError) {
-            console.error(`Error fetching user ${demande.user_id}:`, userError);
+            logger.error(`Error fetching user ${demande.user_id}:`, userError);
           }
   
           return {
@@ -84,7 +84,7 @@ export default async function AdminDemandesPage() {
                 },
           };
         } catch (error) {
-          console.error(`Unexpected error fetching user ${demande.user_id}:`, error);
+          logger.error(`Unexpected error fetching user ${demande.user_id}:`, error);
           return {
             ...demande,
             user: {
@@ -96,14 +96,14 @@ export default async function AdminDemandesPage() {
       })
   );
 
-  // ✅ Récupérer les stats
+  // Récupérer les stats
   const { data: stats, error: statsError } = await adminSupabase
     .from("admin_stats")
     .select("*")
     .single();
 
   if (statsError) {
-    console.error("Error fetching stats:", statsError);
+    logger.error("Error fetching stats:", statsError);
   }
 
   return (
@@ -119,7 +119,7 @@ export default async function AdminDemandesPage() {
         total_revenue: 0,
       }}
       userEmail={user.email || ""}
-      isSuperAdmin={roleData?.role === "super_admin"}
+      isSuperAdmin={superAdminStatus}
     />
   );
 }

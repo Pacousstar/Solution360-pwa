@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
+import { isAdmin } from "@/lib/admin/permissions";
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,13 +39,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: adminCheck } = await supabase
-      .from("admin_users")
-      .select("is_admin")
-      .eq("user_id", currentUser.id)
-      .single();
+    // Vérifier que l'utilisateur est admin (logique centralisée)
+    const adminStatus = await isAdmin(currentUser.id, currentUser.email || undefined);
 
-    if (!adminCheck?.is_admin) {
+    if (!adminStatus) {
+      logger.warn("❌ Tentative d'upload par non-admin:", currentUser.email);
       return NextResponse.json(
         { error: "Accès réservé aux admins" },
         { status: 403 }
@@ -68,9 +68,9 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      console.error("Erreur upload Supabase:", uploadError);
+      logger.error("Erreur upload Supabase:", uploadError);
       return NextResponse.json(
-        { error: `Erreur upload: ${uploadError.message}` },
+        { error: "Erreur lors de l'upload du fichier. Veuillez réessayer." },
         { status: 500 }
       );
     }
@@ -93,11 +93,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (dbError) {
-      console.error("Erreur insertion DB:", dbError);
+      logger.error("Erreur insertion DB:", dbError);
       // Supprimer le fichier uploadé si l'insertion échoue
       await supabase.storage.from("deliverables").remove([filePath]);
       return NextResponse.json(
-        { error: `Erreur DB: ${dbError.message}` },
+        { error: "Erreur lors de l'enregistrement. Le fichier a été supprimé." },
         { status: 500 }
       );
     }
@@ -111,9 +111,9 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error: any) {
-    console.error("Erreur serveur:", error);
+    logger.error("Erreur serveur:", error);
     return NextResponse.json(
-      { error: error.message || "Erreur serveur interne" },
+      { error: "Erreur serveur interne. Veuillez réessayer." },
       { status: 500 }
     );
   }

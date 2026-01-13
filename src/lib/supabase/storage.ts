@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { logger } from "@/lib/logger";
 
 /**
  * Crée un client Supabase serveur pour les opérations storage
@@ -75,23 +76,23 @@ export async function uploadDeliverable(
     });
 
   if (uploadError) {
-    console.error("❌ Storage upload error:", uploadError);
+    logger.error("❌ Storage upload error:", uploadError);
     throw new Error("Impossible de télécharger le fichier");
   }
 
-  console.log("✅ Fichier uploadé:", uploadData.path);
+  logger.log("✅ Fichier uploadé:", uploadData.path);
 
-  // ✅ GÉNÉRER URL SIGNÉE (7 jours de validité)
+  // GÉNÉRER URL SIGNÉE (7 jours de validité)
   const { data: signedData, error: signedError } = await supabase.storage
     .from("deliverables")
     .createSignedUrl(uploadData.path, 60 * 60 * 24 * 7);
 
   if (signedError) {
-    console.error("❌ Signed URL error:", signedError);
+    logger.error("❌ Signed URL error:", signedError);
     throw new Error("Impossible de générer le lien de téléchargement");
   }
 
-  // ✅ ENREGISTRER EN BASE DE DONNÉES
+  // ENREGISTRER EN BASE DE DONNÉES
   const { error: dbError } = await supabase.from("deliverables").insert({
     request_id: requestId,
     file_name: safeName,
@@ -102,7 +103,7 @@ export async function uploadDeliverable(
   });
 
   if (dbError) {
-    console.error("❌ DB insert error:", dbError);
+    logger.error("❌ DB insert error:", dbError);
     // Rollback : supprimer le fichier uploadé
     await supabase.storage.from("deliverables").remove([uploadData.path]);
     throw new Error("Erreur lors de l'enregistrement en base");
@@ -130,7 +131,7 @@ export async function deleteDeliverable(filePath: string) {
       .eq("file_path", filePath);
 
     if (dbError) {
-      console.error("❌ DB delete error:", dbError);
+      logger.error("❌ DB delete error:", dbError);
     }
 
     // Supprimer du storage
@@ -139,13 +140,13 @@ export async function deleteDeliverable(filePath: string) {
       .remove([filePath]);
 
     if (storageError) {
-      console.error("❌ Storage delete error:", storageError);
+      logger.error("❌ Storage delete error:", storageError);
       throw new Error("Impossible de supprimer le fichier");
     }
 
-    console.log("✅ Fichier supprimé:", filePath);
+    logger.log("✅ Fichier supprimé:", filePath);
   } catch (error) {
-    console.error("❌ Delete error:", error);
+    logger.error("❌ Delete error:", error);
     throw error;
   }
 }
@@ -164,7 +165,7 @@ export async function listDeliverables(requestId: string) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("❌ List deliverables error:", error);
+    logger.error("❌ List deliverables error:", error);
     throw error;
   }
 

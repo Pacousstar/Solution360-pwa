@@ -5,11 +5,11 @@ Voici exactement ce que vous devez me dire au début de la nouvelle conversation
 
 Bonjour, je suis A. DIHI de GSN EXPERTISES GROUP.
 
-Je travaille sur Solution360°, une plateforme de consulting digital Next.js 16 + Supabase déployée sur Vercel.
+Je travaille sur Solution360°, une plateforme de consulting digital Next.js 15 + Supabase déployée sur Vercel.
 
 CONTEXTE :
 - Structure projet : /src/app, /src/components, /src/lib (migration récente depuis /app à la racine)
-- Stack : Next.js 16.1.1, React 19, Supabase Auth + Storage, Tailwind CSS 4, TypeScript
+- Stack : Next.js 15.3.1, React 18.3.1, Supabase Auth + Storage, Tailwind CSS 3.4.1, TypeScript 5
 - Palette : Orange/Blanc/Vert/Bleu/Rouge (plus de violet)
 - Repo GitHub : https://github.com/Pacousstar/Solution360-pwa
 
@@ -22,7 +22,7 @@ FONCTIONNALITÉS IMPLÉMENTÉES :
 ✅ Upload livrables (bucket Supabase "deliverables" créé et public)
 ✅ Middleware de protection routes
 ✅ RLS configuré sur tables requests/ai_analyses/admin_users
-✅ Admins : pacous2000@gmail.com, admin@solution360.app
+✅ Admins : pacous2000@gmail.com, pacousstar02@gmail.com
 
 STRUCTURE FICHIERS ACTUELLE (/src) :
 src/
@@ -146,7 +146,7 @@ solution360-pwa/
 Tables Supabase :
 - `requests` (demandes clients)
 - `ai_analyses` (estimations IA)
-- `admin_users` (pacous2000@gmail.com, admin@solution360.app)
+- `admin_users` (pacous2000@gmail.com, pacousstar02@gmail.com)
 - RLS activé sur toutes les tables
 
 Storage :

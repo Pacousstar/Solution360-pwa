@@ -15,15 +15,11 @@ export default async function DashboardLayout({
   // ❌ PAS DE REDIRECT ICI (géré par le middleware)
   // Le middleware a déjà vérifié l'authentification
 
-  // Vérifier si admin
+  // ✅ Utilisation de la logique centralisée
   let isAdmin = false;
   if (user) {
-    const { data: adminCheck } = await supabase
-      .from("admin_users")
-      .select("user_id")
-      .eq("user_id", user.id)
-      .single();
-    isAdmin = !!adminCheck;
+    const { isAdmin: checkAdmin } = await import('@/lib/admin/permissions');
+    isAdmin = await checkAdmin(user.id, user.email || undefined);
   }
 
   return (

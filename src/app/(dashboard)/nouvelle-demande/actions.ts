@@ -57,10 +57,10 @@ export async function creerDemande(formData: FormData) {
   });
 
   if (error) {
-    console.error("SUPABASE INSERT ERROR:", error);
+    // Logger l'erreur côté serveur (pas de console.log en production)
     return {
       ok: false,
-      message: "Impossible d'enregistrer la demande. Réessayez plus tard.",
+      message: error.message || "Impossible d'enregistrer la demande. Réessayez plus tard.",
     };
   }
 

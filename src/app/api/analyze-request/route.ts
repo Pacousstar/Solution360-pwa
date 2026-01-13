@@ -1,125 +1,134 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
-  console.log("🚀 API /api/analyze-request appelée");
+  logger.log("🚀 API /api/analyze-request appelée");
   
-  const supabase = await createSupabaseServerClient();
+  try {
+    const supabase = await createSupabaseServerClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  console.log("👤 User:", user?.email || "Non connecté");
+    logger.log("👤 User:", user?.email || "Non connecté");
 
-  if (!user) {
-    console.log("❌ Utilisateur non authentifié");
-    return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
-  }
+    if (!user) {
+      logger.warn("❌ Utilisateur non authentifié");
+      return NextResponse.json(
+        { error: "Authentification requise" },
+        { status: 401 }
+      );
+    }
 
-  const { request_id } = await request.json();
-  console.log("📝 Request ID reçu:", request_id);
+    const body = await request.json();
+    const { request_id } = body;
 
-  if (!request_id) {
-    console.log("❌ request_id manquant");
-    return NextResponse.json(
-      { error: "request_id manquant" },
-      { status: 400 }
+    if (!request_id) {
+      logger.warn("❌ request_id manquant");
+      return NextResponse.json(
+        { error: "request_id est requis" },
+        { status: 400 }
+      );
+    }
+
+    // Récupérer la demande
+    const { data: req, error: reqError } = await supabase
+      .from("requests")
+      .select("*")
+      .eq("id", request_id)
+      .single();
+
+    if (reqError || !req) {
+      logger.error("❌ Demande introuvable:", reqError);
+      return NextResponse.json(
+        { error: "Demande introuvable" },
+        { status: 404 }
+      );
+    }
+
+    logger.log("✅ Demande trouvée:", req.title);
+
+    // Vérifier que l'utilisateur est admin (utiliser la fonction centralisée)
+    const { isAdmin } = await import("@/lib/admin/permissions");
+    const adminStatus = await isAdmin(user.id, user.email || undefined);
+
+    if (!adminStatus) {
+      logger.warn("❌ Utilisateur non admin:", user.email);
+      return NextResponse.json(
+        { error: "Accès refusé - Réservé aux admins" },
+        { status: 403 }
+      );
+    }
+
+    logger.log("✅ Utilisateur admin confirmé");
+
+    // Appeler DeepSeek API
+    const deepseekResponse = await callDeepSeekAPI({
+      title: req.title,
+      description: req.description,
+      complexity: req.complexity,
+      urgency: req.urgency,
+      budget_proposed: req.budget_proposed,
+    });
+
+    if (!deepseekResponse.ok) {
+      logger.error("❌ Erreur DeepSeek API");
+      return NextResponse.json(
+        { error: "Erreur lors de l'analyse IA. Veuillez réessayer." },
+        { status: 500 }
+      );
+    }
+
+    logger.log("✅ Réponse DeepSeek reçue");
+
+    // Stocker l'analyse
+    const { error: insertError } = await supabase.from("ai_analyses").upsert(
+      {
+        request_id,
+        ai_provider: "deepseek",
+        summary: deepseekResponse.summary,
+        deliverables: deepseekResponse.deliverables,
+        estimated_price_fcfa: deepseekResponse.estimated_price_fcfa,
+        clarification_questions: deepseekResponse.clarification_questions,
+        raw_response: deepseekResponse.raw,
+      },
+      { onConflict: "request_id" }
     );
-  }
 
-  // Récupérer la demande
-  const { data: req, error: reqError } = await supabase
-    .from("requests")
-    .select("*")
-    .eq("id", request_id)
-    .single();
+    if (insertError) {
+      logger.error("❌ SUPABASE INSERT AI_ANALYSES ERROR:", insertError);
+      return NextResponse.json(
+        { error: "Impossible de sauvegarder l'analyse" },
+        { status: 500 }
+      );
+    }
 
-  if (reqError || !req) {
-    console.log("❌ Demande introuvable:", reqError);
+    logger.log("✅ Analyse sauvegardée dans Supabase");
+
+    // Mettre à jour la demande
+    await supabase
+      .from("requests")
+      .update({
+        ai_phase: "deepseek",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", request_id);
+
+    logger.log("✅ Demande mise à jour (ai_phase = deepseek)");
+
+    return NextResponse.json({
+      ok: true,
+      analysis: deepseekResponse,
+    });
+  } catch (error: any) {
+    logger.error("❌ Erreur serveur:", error);
     return NextResponse.json(
-      { error: "Demande introuvable" },
-      { status: 404 }
-    );
-  }
-
-  console.log("✅ Demande trouvée:", req.title);
-
-  // Vérifier que l'utilisateur est admin
-  const { data: adminCheck } = await supabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .single();
-
-  if (!adminCheck) {
-    console.log("❌ Utilisateur non admin");
-    return NextResponse.json(
-      { error: "Accès refusé - Réservé aux admins" },
-      { status: 403 }
-    );
-  }
-
-  console.log("✅ Utilisateur admin confirmé");
-
-  // Appeler DeepSeek API
-  const deepseekResponse = await callDeepSeekAPI({
-    title: req.title,
-    description: req.description,
-    complexity: req.complexity,
-    urgency: req.urgency,
-    budget_proposed: req.budget_proposed,
-  });
-
-  if (!deepseekResponse.ok) {
-    console.log("❌ Erreur DeepSeek API");
-    return NextResponse.json(
-      { error: "Erreur API DeepSeek" },
+      { error: "Erreur serveur. Veuillez réessayer." },
       { status: 500 }
     );
   }
-
-  console.log("✅ Réponse DeepSeek reçue");
-
-  // Stocker l'analyse
-  const { error: insertError } = await supabase.from("ai_analyses").upsert(
-    {
-      request_id,
-      ai_provider: "deepseek",
-      summary: deepseekResponse.summary,
-      deliverables: deepseekResponse.deliverables,
-      estimated_price_fcfa: deepseekResponse.estimated_price_fcfa,
-      clarification_questions: deepseekResponse.clarification_questions,
-      raw_response: deepseekResponse.raw,
-    },
-    { onConflict: "request_id" }
-  );
-
-  if (insertError) {
-    console.error("❌ SUPABASE INSERT AI_ANALYSES ERROR:", insertError);
-    return NextResponse.json(
-      { error: "Impossible de sauvegarder l'analyse" },
-      { status: 500 }
-    );
-  }
-
-  console.log("✅ Analyse sauvegardée dans Supabase");
-
-  // Mettre à jour la demande
-  await supabase
-    .from("requests")
-    .update({
-      ai_phase: "deepseek",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", request_id);
-
-  console.log("✅ Demande mise à jour (ai_phase = deepseek)");
-
-  return NextResponse.json({
-    ok: true,
-    analysis: deepseekResponse,
-  });
 }
 
 // Fonction d'appel à DeepSeek API
@@ -132,10 +141,10 @@ async function callDeepSeekAPI(params: {
 }) {
   const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 
-  console.log("🔑 DEEPSEEK_API_KEY présente ?", !!DEEPSEEK_API_KEY);
+  logger.log("🔑 DEEPSEEK_API_KEY présente ?", !!DEEPSEEK_API_KEY);
 
   if (!DEEPSEEK_API_KEY) {
-    console.error("❌ DEEPSEEK_API_KEY manquante dans .env.local");
+    logger.error("❌ DEEPSEEK_API_KEY manquante dans .env.local");
     return { ok: false };
   }
 
@@ -163,8 +172,8 @@ Réponds UNIQUEMENT en JSON valide avec cette structure :
   "clarification_questions": ["Question 1 ?", "Question 2 ?", ...]
 }`;
 
-  console.log("🤖 Appel DeepSeek API en cours...");
-  console.log("📋 Params:", { title: params.title, complexity: params.complexity });
+  logger.log("🤖 Appel DeepSeek API en cours...");
+  logger.log("📋 Params:", { title: params.title, complexity: params.complexity });
 
   try {
     const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
@@ -192,19 +201,24 @@ Réponds UNIQUEMENT en JSON valide avec cette structure :
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("❌ DeepSeek API error:", errorText);
+      logger.error("❌ DeepSeek API error:", errorText);
       return { ok: false };
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "{}";
 
-    console.log("📦 Réponse brute DeepSeek:", content);
+    logger.log("📦 Réponse brute DeepSeek:", content);
 
     // Parser le JSON retourné par DeepSeek
-    const parsed = JSON.parse(content);
-
-    console.log("✅ JSON parsé avec succès");
+    let parsed;
+    try {
+      parsed = JSON.parse(content);
+      logger.log("✅ JSON parsé avec succès");
+    } catch (parseError) {
+      logger.error("❌ Erreur parsing JSON DeepSeek:", parseError);
+      return { ok: false };
+    }
 
     return {
       ok: true,
@@ -215,7 +229,7 @@ Réponds UNIQUEMENT en JSON valide avec cette structure :
       raw: data,
     };
   } catch (error) {
-    console.error("❌ DeepSeek API call failed:", error);
+    logger.error("❌ DeepSeek API call failed:", error);
     return { ok: false };
   }
 }

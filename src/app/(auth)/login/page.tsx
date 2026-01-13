@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
+import { logger } from '@/lib/logger'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -31,7 +32,7 @@ export default function LoginPage() {
         }
       )
 
-      console.log('🔐 Login attempt:', email)
+      logger.log('🔐 Login attempt:', email)
 
       // ÉTAPE 1 : Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -40,8 +41,8 @@ export default function LoginPage() {
       })
 
       if (authError) {
-        console.error('❌ Auth error:', authError)
-        setError(authError.message)
+        logger.error('❌ Auth error:', authError)
+        setError(authError.message || 'Erreur de connexion. Vérifiez vos identifiants.')
         setLoading(false)
         return
       }
@@ -52,73 +53,31 @@ export default function LoginPage() {
         return
       }
 
-      console.log('✅ Auth OK, user_id:', authData.user.id)
+      logger.log('✅ Auth OK, user_id:', authData.user.id)
 
-      // ÉTAPE 2 : Vérifier admin avec fetch direct (bypass 406)
-      let isAdmin = false
-      
-      try {
-        // Essayer avec .from() standard
-        const { data: adminData, error: adminError } = await supabase
-          .from('admin_users')
-          .select('is_admin')
-          .eq('user_id', authData.user.id)
-          .maybeSingle()
+      // ÉTAPE 2 : Vérifier admin (logique centralisée)
+      // ✅ Utilisation de la fonction centralisée depuis lib/admin/permissions
+      const { isAdmin } = await import('@/lib/admin/permissions')
+      const adminStatus = await isAdmin(
+        authData.user.id,
+        authData.user.email || undefined
+      )
 
-        console.log('Admin check:', { adminData, adminError })
-
-        if (adminError) {
-          console.warn('⚠️ Erreur admin_users, essai avec fetch direct...')
-          
-          // FALLBACK : Requête fetch directe
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/admin_users?user_id=eq.${authData.user.id}&select=is_admin`,
-            {
-              headers: {
-                'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-                'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-              },
-            }
-          )
-
-          if (response.ok) {
-            const directData = await response.json()
-            console.log('✅ Fetch direct OK:', directData)
-            isAdmin = directData[0]?.is_admin === true
-          } else {
-            console.error('❌ Fetch direct failed:', response.status, await response.text())
-            throw new Error('Table admin_users inaccessible')
-          }
-        } else {
-          isAdmin = adminData?.is_admin === true
-        }
-      } catch (err) {
-        console.warn('⚠️ Toutes méthodes échouées, fallback email...')
-        // FALLBACK FINAL : Liste hardcodée
-        const adminEmails = [
-          'pacous2000@gmail.com',
-          'admin@solution360.app',
-        ]
-        isAdmin = adminEmails.includes(authData.user.email || '')
-      }
-
-      console.log('🎯 Final isAdmin:', isAdmin)
+      logger.log('🎯 Admin status:', adminStatus)
 
       // ÉTAPE 3 : Redirection
-      if (isAdmin) {
-        console.log('✅ Redirect → /admin/demandes')
+      if (adminStatus) {
+        logger.log('✅ Redirect → /admin/demandes')
         router.push('/admin/demandes')
       } else {
-        console.log('✅ Redirect → /demandes')
+        logger.log('✅ Redirect → /demandes')
         router.push('/demandes')
       }
       
       router.refresh()
     } catch (err: any) {
-      console.error('💥 Error:', err)
-      setError('Erreur de connexion')
+      logger.error('💥 Error:', err)
+      setError(err?.message || 'Erreur de connexion. Veuillez réessayer.')
       setLoading(false)
     }
   }

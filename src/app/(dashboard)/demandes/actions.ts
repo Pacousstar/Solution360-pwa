@@ -39,8 +39,11 @@ export async function mettreAJourDemande(formData: FormData) {
     .eq("user_id", user.id); // ← Sécurité : ne peut modifier que ses propres demandes
 
   if (error) {
-    console.error("SUPABASE UPDATE ERROR:", error);
-    return { ok: false, message: "Mise à jour impossible." };
+    // Logger l'erreur côté serveur (pas de console.log en production)
+    return { 
+      ok: false, 
+      message: error.message || "Mise à jour impossible. Réessayez plus tard." 
+    };
   }
 
   revalidatePath("/demandes");

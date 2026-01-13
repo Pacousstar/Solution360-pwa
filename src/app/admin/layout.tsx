@@ -26,15 +26,13 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
-  // Récupérer le rôle et permissions
-  const roleData = await getUserRole(user.id);
-  const isAdmin =
-    roleData?.role === "admin" || roleData?.role === "super_admin";
-  const isSuperAdmin = roleData?.role === "super_admin";
+  // ✅ Utilisation de la logique centralisée
+  const { isAdmin, isSuperAdmin } = await import('@/lib/admin/permissions');
+  const adminStatus = await isAdmin(user.id, user.email || undefined);
+  const superAdminStatus = await isSuperAdmin(user.id);
 
-  // Fallback sur emails (legacy)
-  const adminEmails = ["pacous2000@gmail.com", "admin@solution360.app"];
-  if (!isAdmin && !adminEmails.includes(user.email || "")) {
+  // Rediriger si pas admin
+  if (!adminStatus) {
     redirect("/demandes");
   }
 
@@ -68,7 +66,7 @@ export default async function AdminLayout({
                   {user.user_metadata?.full_name || user.email}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {isSuperAdmin ? "🔐 Super Admin" : "👤 Admin"}
+                  {superAdminStatus ? "🔐 Super Admin" : "👤 Admin"}
                 </p>
               </div>
               <form action={logout}>

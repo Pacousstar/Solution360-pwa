@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react"; // ✅ Ajouter useEffect
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { logger } from "@/lib/logger";
 
 type User = {
   id: string;
@@ -27,13 +28,8 @@ export default function ProfilContent({ user }: { user: User }) {
   const [updating, setUpdating] = useState(false);
   const [message, setMessage] = useState("");
 
-  // ✅ DEBUG
-  console.log("🔍 Props user reçues:", user);
-  console.log("🔍 avatarUrl initial:", avatarUrl);
-
-  // ✅ SOLUTION : Synchroniser avatarUrl avec les props
+  // Synchroniser avatarUrl avec les props
   useEffect(() => {
-    console.log("🔄 useEffect - Mise à jour avatarUrl:", user.avatarUrl);
     setAvatarUrl(user.avatarUrl);
   }, [user.avatarUrl]);
 
@@ -66,12 +62,12 @@ export default function ProfilContent({ user }: { user: User }) {
         throw new Error("Session expirée. Veuillez vous reconnecter.");
       }
   
-      console.log("✅ Session active:", session.user.email);
+      logger.log("✅ Session active:", session.user.email);
   
       const fileExt = file.name.split(".").pop();
       const filePath = `${user.id}/avatar.${fileExt}`;
   
-      console.log("📤 Upload vers:", filePath);
+      logger.log("📤 Upload vers:", filePath);
   
       // Supprimer l'ancienne photo
       const { data: existingFiles } = await supabase.storage
@@ -79,7 +75,7 @@ export default function ProfilContent({ user }: { user: User }) {
         .list(user.id);
   
       if (existingFiles && existingFiles.length > 0) {
-        console.log("🗑️ Suppression de l'ancienne photo...");
+        logger.log("🗑️ Suppression de l'ancienne photo...");
         const filesToRemove = existingFiles.map((f) => `${user.id}/${f.name}`);
         await supabase.storage.from("avatars").remove(filesToRemove);
       }
@@ -93,11 +89,11 @@ export default function ProfilContent({ user }: { user: User }) {
         });
   
       if (uploadError) {
-        console.error("❌ Erreur upload:", uploadError);
+        logger.error("❌ Erreur upload:", uploadError);
         throw new Error(uploadError.message);
       }
   
-      console.log("✅ Upload réussi:", uploadData);
+      logger.log("✅ Upload réussi:", uploadData);
   
       // Obtenir l'URL publique avec timestamp pour forcer le refresh
       const timestamp = new Date().getTime();
@@ -107,12 +103,12 @@ export default function ProfilContent({ user }: { user: User }) {
   
       const finalUrl = `${publicUrl}?t=${timestamp}`;
   
-      console.log("🔗 URL publique:", finalUrl);
+      logger.log("🔗 URL publique:", finalUrl);
   
-      // ✅ Mettre à jour l'état local pour affichage immédiat
+      // Mettre à jour l'état local pour affichage immédiat
       setAvatarUrl(finalUrl);
   
-      // ✅ Sauvegarder automatiquement dans user_metadata
+      // Sauvegarder automatiquement dans user_metadata
       const { error: updateError } = await supabase.auth.updateUser({
         data: {
           avatar_url: publicUrl, // Sans timestamp pour la base
@@ -120,14 +116,14 @@ export default function ProfilContent({ user }: { user: User }) {
       });
   
       if (updateError) {
-        console.warn("⚠️ Impossible de sauvegarder l'URL dans metadata:", updateError);
+        logger.warn("⚠️ Impossible de sauvegarder l'URL dans metadata:", updateError);
       } else {
-        console.log("✅ URL sauvegardée dans user_metadata");
+        logger.log("✅ URL sauvegardée dans user_metadata");
       }
   
       setMessage("✅ Photo uploadée et sauvegardée !");
     } catch (error: any) {
-      console.error("❌ Erreur complète:", error);
+      logger.error("❌ Erreur complète:", error);
   
       let errorMessage = "Échec de l'upload";
   
@@ -170,7 +166,7 @@ export default function ProfilContent({ user }: { user: User }) {
   
       if (error) throw error;
   
-      console.log("✅ Profil sauvegardé avec succès");
+        logger.log("✅ Profil sauvegardé avec succès");
       setMessage("✅ Profil mis à jour avec succès !");
       
       // ✅ Rafraîchir la page après 1 seconde pour recharger les données
@@ -178,7 +174,7 @@ export default function ProfilContent({ user }: { user: User }) {
         window.location.reload();
       }, 1000);
     } catch (error: any) {
-      console.error("❌ Erreur sauvegarde:", error);
+      logger.error("❌ Erreur sauvegarde:", error);
       setMessage(`❌ Erreur : ${error.message}`);
     } finally {
       setUpdating(false);

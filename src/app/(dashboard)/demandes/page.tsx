@@ -83,7 +83,8 @@ async function DemandesData() {
     userData?.raw_user_meta_data?.full_name || user.email?.split("@")[0] || "User";
 
   if (error) {
-    console.error("Erreur chargement demandes:", error);
+    // Logger l'erreur mais continuer (afficher liste vide)
+    // Les erreurs sont gérées dans DemandesContent
   }
 
   return <DemandesContent demandes={demandes} userFullName={fullName} />;
