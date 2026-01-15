@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
+  // Définir explicitement la racine du workspace pour éviter l'avertissement des lockfiles multiples
+  outputFileTracingRoot: path.join(__dirname),
+  
   // Désactiver ESLint pendant le build pour éviter les warnings
   eslint: {
     ignoreDuringBuilds: true,
