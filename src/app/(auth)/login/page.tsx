@@ -55,14 +55,22 @@ export default function LoginPage() {
 
       logger.log('✅ Auth OK, user_id:', authData.user.id)
 
-      // ÉTAPE 2 : Vérifier admin (logique centralisée)
-      // ✅ Utilisation de la fonction centralisée depuis lib/admin/permissions
-      const { isAdmin } = await import('@/lib/admin/permissions')
-      const adminStatus = await isAdmin(
-        authData.user.id,
-        authData.user.email || undefined
-      )
+      // ÉTAPE 2 : Vérifier admin via route API (sécurisé côté serveur)
+      const checkAdminResponse = await fetch('/api/auth/check-admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
 
+      if (!checkAdminResponse.ok) {
+        logger.warn('⚠️ Impossible de vérifier le statut admin, redirection par défaut')
+        router.push('/demandes')
+        router.refresh()
+        return
+      }
+
+      const { isAdmin: adminStatus } = await checkAdminResponse.json()
       logger.log('🎯 Admin status:', adminStatus)
 
       // ÉTAPE 3 : Redirection
