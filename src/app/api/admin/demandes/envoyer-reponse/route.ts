@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { sendEmail, getResponseEmailTemplate } from '@/lib/emails';
 
 export async function POST(request: Request) {
   try {
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Permissions insuffisantes' }, { status: 403 });
     }
 
-    const { requestId, adminResponse, clientEmail, clientName } = await request.json();
+    const { requestId, adminResponse, clientEmail, clientName, requestTitle } = await request.json();
 
     // Mettre à jour la demande
     const { error: updateError } = await supabase
@@ -41,12 +42,37 @@ export async function POST(request: Request) {
       content: adminResponse
     });
 
-    // TODO: Envoyer email
-    console.log('📧 Réponse email:', {
-      to: clientEmail,
-      subject: 'Réponse à votre demande Solution360',
-      body: `Bonjour ${clientName},\n\n${adminResponse}\n\nCordialement,\nL'équipe Solution360`
+    // Récupérer le titre de la demande si pas fourni
+    let title = requestTitle;
+    if (!title) {
+      const { data: demande } = await supabase
+        .from('requests')
+        .select('title')
+        .eq('id', requestId)
+        .single();
+      title = demande?.title || 'Votre demande';
+    }
+
+    // Envoyer email au client
+    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://solution360.app';
+    const emailHtml = getResponseEmailTemplate({
+      clientName,
+      adminResponse,
+      requestTitle: title,
+      requestId,
+      baseUrl,
     });
+
+    const emailResult = await sendEmail({
+      to: clientEmail,
+      subject: 'Réponse à votre demande Solution360°',
+      html: emailHtml,
+    });
+
+    if (!emailResult.success) {
+      console.error('⚠️ Erreur lors de l\'envoi de l\'email:', emailResult.error);
+      // Ne pas bloquer la réponse si l'email échoue
+    }
 
     return NextResponse.json({ success: true });
 

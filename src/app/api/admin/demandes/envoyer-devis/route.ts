@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { sendEmail, getQuoteEmailTemplate } from '@/lib/emails';
 
 export async function POST(request: Request) {
   try {
@@ -56,27 +57,27 @@ export async function POST(request: Request) {
       content: `Devis envoyé : ${finalPrice.toLocaleString()} FCFA - ${priceJustification.substring(0, 100)}...`
     });
 
-    // 7. TODO: Envoyer l'email au client
-    console.log('📧 Email à envoyer:', {
+    // 7. Envoyer l'email au client
+    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://solution360.app';
+    const emailHtml = getQuoteEmailTemplate({
+      clientName,
+      requestTitle,
+      finalPrice,
+      priceJustification,
+      requestId,
+      baseUrl,
+    });
+
+    const emailResult = await sendEmail({
       to: clientEmail,
       subject: `Devis pour votre projet : ${requestTitle}`,
-      body: `
-Bonjour ${clientName},
-
-Nous avons le plaisir de vous faire parvenir notre devis pour votre projet "${requestTitle}".
-
-Prix proposé : ${finalPrice.toLocaleString()} FCFA
-
-Justification :
-${priceJustification}
-
-Pour accepter ce devis et procéder au paiement, rendez-vous dans votre espace client :
-https://solution360.app/demandes/${requestId}
-
-Cordialement,
-L'équipe Solution360
-      `
+      html: emailHtml,
     });
+
+    if (!emailResult.success) {
+      console.error('⚠️ Erreur lors de l\'envoi de l\'email:', emailResult.error);
+      // Ne pas bloquer la réponse si l'email échoue
+    }
 
     return NextResponse.json({ 
       success: true,

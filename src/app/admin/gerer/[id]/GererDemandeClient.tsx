@@ -158,6 +158,7 @@ export default function GererDemandeClient({
           adminResponse,
           clientEmail,
           clientName,
+          requestTitle: demande.title,
         }),
       });
 
