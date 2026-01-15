@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdmin } from "@/lib/admin/permissions";
 
 export default async function AdminDetailPage({
@@ -21,13 +22,52 @@ export default async function AdminDetailPage({
   const adminStatus = await isAdmin(user.id, user.email || undefined);
   if (!adminStatus) redirect("/demandes");
 
-  const { data: demande } = await supabase
-    .from("requests")
-    .select("*, ai_analyses (*)")
-    .eq("id", id)
-    .single();
+  // Utiliser admin client pour récupérer les données plus rapidement
+  const adminSupabase = createAdminClient();
 
-  if (!demande) notFound();
+  // Récupérer demande et analyse en parallèle
+  const [demandeResult, analysisResult] = await Promise.all([
+    adminSupabase
+      .from("requests")
+      .select("*")
+      .eq("id", id)
+      .single(),
+    adminSupabase
+      .from("ai_analyses")
+      .select("*")
+      .eq("request_id", id)
+      .maybeSingle(),
+  ]);
+
+  if (demandeResult.error || !demandeResult.data) {
+    notFound();
+  }
+
+  const demande = demandeResult.data;
+  const ai_analyses = analysisResult.data ? [analysisResult.data] : [];
+
+  // Récupérer les infos utilisateur si user_id existe
+  let clientInfo = {
+    fullName: "Client anonyme",
+    email: demande.email || "",
+  };
+
+  if (demande.user_id) {
+    try {
+      const { data: userData } = await adminSupabase.auth.admin.getUserById(demande.user_id);
+      if (userData?.user) {
+        clientInfo = {
+          fullName:
+            userData.user.user_metadata?.full_name ||
+            userData.user.email?.split("@")[0] ||
+            "Client anonyme",
+          email: userData.user.email || demande.email || "",
+        };
+      }
+    } catch (error) {
+      console.error("Error fetching user:", error);
+    }
+  }
 
   const status = demande.status as string | null;
   let statusLabel = "ANALYSIS";
@@ -57,6 +97,7 @@ export default async function AdminDetailPage({
       <div className="max-w-4xl mx-auto">
         <Link
           href="/admin/demandes"
+          prefetch={true}
           className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-semibold mb-6 hover:gap-3 transition-all"
         >
           <svg
@@ -101,11 +142,11 @@ export default async function AdminDetailPage({
                 👤 Client
               </h3>
               <p className="text-lg font-semibold text-gray-900">
-                {demande.full_name || demande.email || "Client anonyme"}
+                {clientInfo.fullName}
               </p>
-              {demande.email && (
+              {clientInfo.email && (
                 <p className="text-sm text-gray-600 mt-1">
-                  {demande.email}
+                  {clientInfo.email}
                 </p>
               )}
             </div>
@@ -133,13 +174,13 @@ export default async function AdminDetailPage({
                 💰 Prix estimé (IA)
               </h3>
               <p className="text-3xl font-bold text-green-600">
-                {demande.ai_analyses?.[0]?.estimated_price
-                  ? `${demande.ai_analyses[0].estimated_price.toLocaleString()} FCFA`
+                {ai_analyses?.[0]?.estimated_price
+                  ? `${ai_analyses[0].estimated_price.toLocaleString()} FCFA`
                   : "Non analysé"}
               </p>
-              {demande.ai_analyses?.[0]?.analysis_summary && (
+              {ai_analyses?.[0]?.analysis_summary && (
                 <p className="text-sm text-gray-600 mt-2">
-                  {demande.ai_analyses[0].analysis_summary}
+                  {ai_analyses[0].analysis_summary}
                 </p>
               )}
             </div>
@@ -160,6 +201,7 @@ export default async function AdminDetailPage({
           <div className="mt-8 flex gap-4">
             <Link
               href={`/admin/gerer/${demande.id}`}
+              prefetch={true}
               className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 text-white py-4 rounded-xl font-bold text-center shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center gap-2"
             >
               Gérer cette demande
