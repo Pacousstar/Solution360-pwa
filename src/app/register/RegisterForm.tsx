@@ -184,26 +184,6 @@ export default function RegisterForm() {
         </button>
       </form>
 
-      {/* Divider */}
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-300"></div>
-        </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-white text-gray-500">Ou</span>
-        </div>
-      </div>
-
-      {/* Lien connexion */}
-      <p className="text-center text-sm text-gray-600">
-        Vous avez déjà un compte ?{" "}
-        <Link
-          href="/login"
-          className="font-semibold text-orange-600 hover:text-orange-700"
-        >
-          Se connecter
-        </Link>
-      </p>
 
       {/* Lien retour accueil */}
       <div className="mt-6 text-center">

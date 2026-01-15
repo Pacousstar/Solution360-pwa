@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { logger } from '@/lib/logger'
 import Logo from '@/components/Logo'
+import LogoText from '@/components/LogoText'
 import PasswordInput from '@/components/PasswordInput'
 
 export default function LoginPage() {
@@ -90,9 +91,9 @@ export default function LoginPage() {
           <div className="flex justify-center mb-4">
             <Logo size="lg" href="/" showText={false} />
           </div>
-          <h1 className="text-3xl font-black text-gray-900 mb-2">
-            Se connecter
-          </h1>
+          <div className="mb-2">
+            <LogoText size="lg" />
+          </div>
           <p className="text-gray-600">
             Accédez à votre espace Solution360°
           </p>

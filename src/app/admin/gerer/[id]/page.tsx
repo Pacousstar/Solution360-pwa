@@ -1,8 +1,8 @@
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
 import { redirect, notFound } from "next/navigation";
 import { uploadDeliverable, listDeliverables } from "@/lib/supabase/storage";
 import GererDemandeClient from "./GererDemandeClient";
+import { createClient } from "@/lib/supabase/server";
+import { isAdmin } from "@/lib/admin/permissions";
 
 export default async function AdminGererPage({
   params,
@@ -14,33 +14,16 @@ export default async function AdminGererPage({
   const { id } = await params;
   const { upload, status: statusUpdate, message } = await searchParams;
 
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {}
-        },
-      },
-    }
-  );
-
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  
   if (!user) redirect("/login");
 
-  const adminEmails = ["pacous2000@gmail.com", "admin@solution360.app"];
-  if (!adminEmails.includes(user.email || "")) redirect("/demandes");
+  // ✅ Utiliser la logique centralisée pour vérifier admin
+  const adminStatus = await isAdmin(user.id, user.email || undefined);
+  if (!adminStatus) redirect("/demandes");
 
   const { data: demande } = await supabase
     .from("requests")

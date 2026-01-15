@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import RegisterForm from "./RegisterForm";
 import Logo from "@/components/Logo";
+import LogoText from "@/components/LogoText";
+import Link from "next/link";
 
 export default async function RegisterPage() {
   const supabase = await createClient();
@@ -22,9 +24,9 @@ export default async function RegisterPage() {
           <div className="flex justify-center mb-4">
             <Logo size="lg" href="/" showText={false} />
           </div>
-          <h1 className="text-3xl font-black text-gray-900 mb-2">
-            Créer un compte
-          </h1>
+          <div className="mb-2">
+            <LogoText size="lg" />
+          </div>
           <p className="text-gray-600">
             Rejoignez Solution360° et démarrez votre premier projet
           </p>
@@ -32,15 +34,12 @@ export default async function RegisterPage() {
 
         <RegisterForm />
 
-        {/* Lien connexion */}
-        <p className="text-center text-sm text-gray-600 mt-6">
-          Vous avez déjà un compte ?{" "}
-          <a
-            href="/login"
-            className="font-semibold text-orange-600 hover:text-orange-700"
-          >
-            Se connecter
-          </a>
+        {/* Footer */}
+        <p className="text-center text-xs text-gray-500 mt-6">
+          © 2026 Solution360° - Tous droits réservés |{" "}
+          <Link href="/termes" className="hover:text-orange-600 transition">
+            Termes et conditions
+          </Link>
         </p>
       </div>
     </div>

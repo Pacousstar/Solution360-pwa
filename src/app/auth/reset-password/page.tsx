@@ -19,7 +19,7 @@ function ResetPasswordForm() {
     // Vérifier qu'on a bien un code de réinitialisation
     const code = searchParams.get('code')
     if (!code) {
-      setError('Lien de réinitialisation invalide')
+      setError('Lien de réinitialisation invalide. Veuillez utiliser le lien envoyé par email.')
     }
   }, [searchParams])
 
@@ -42,6 +42,19 @@ function ResetPasswordForm() {
 
     try {
       const supabase = createClient()
+      const code = searchParams.get('code')
+      
+      // Si on a un code, l'échanger d'abord contre une session
+      if (code) {
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+        if (exchangeError) {
+          setError('Code de réinitialisation invalide ou expiré')
+          setLoading(false)
+          return
+        }
+      }
+
+      // Mettre à jour le mot de passe
       const { error: updateError } = await supabase.auth.updateUser({
         password: password,
       })
