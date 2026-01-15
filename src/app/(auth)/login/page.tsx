@@ -1,17 +1,19 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { logger } from '@/lib/logger'
 import Logo from '@/components/Logo'
+import PasswordInput from '@/components/PasswordInput'
 
 export default function LoginPage() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -19,23 +21,11 @@ export default function LoginPage() {
     setError('')
 
     try {
-      // Créer client avec headers explicites
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          global: {
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-            },
-          },
-        }
-      )
+      const supabase = createClient()
 
       logger.log('🔐 Login attempt:', email)
 
-      // ÉTAPE 1 : Auth
+      // ÉTAPE 1 : Auth avec options de persistance
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -74,16 +64,17 @@ export default function LoginPage() {
       const { isAdmin: adminStatus } = await checkAdminResponse.json()
       logger.log('🎯 Admin status:', adminStatus)
 
-      // ÉTAPE 3 : Redirection
+      // ÉTAPE 3 : Attendre un peu pour que la session soit bien enregistrée
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // ÉTAPE 4 : Redirection avec window.location pour forcer le rechargement complet
       if (adminStatus) {
         logger.log('✅ Redirect → /admin/demandes')
-        router.push('/admin/demandes')
+        window.location.href = '/admin/demandes'
       } else {
         logger.log('✅ Redirect → /demandes')
-        router.push('/demandes')
+        window.location.href = '/demandes'
       }
-      
-      router.refresh()
     } catch (err: any) {
       logger.error('💥 Error:', err)
       setError(err?.message || 'Erreur de connexion. Veuillez réessayer.')
@@ -92,75 +83,93 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-100 via-green-50 to-teal-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-sky-50 px-4 py-12">
       <div className="w-full max-w-md">
-        {/* Logo + Titre */}
-        <div className="text-center mb-10">
-          <div className="flex justify-center mb-5">
-            <Logo size="xl" href="/" showText={false} />
+        {/* Logo et titre */}
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <Logo size="lg" href="/" showText={false} />
           </div>
-          <h1 className="text-4xl md:text-5xl font-black mb-2 bg-gradient-to-r from-orange-600 via-green-600 to-teal-600 bg-clip-text text-transparent">
-            Solution360°
+          <h1 className="text-3xl font-black text-gray-900 mb-2">
+            Se connecter
           </h1>
-          <p className="text-lg text-gray-600 font-semibold">GSN Expertises Group</p>
+          <p className="text-gray-600">
+            Accédez à votre espace Solution360°
+          </p>
         </div>
 
         {/* Formulaire */}
-        <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/50">
-          <form onSubmit={handleLogin} className="space-y-5">
-            <div>
-              <label className="flex items-center gap-2 text-gray-800 font-bold mb-2 text-sm">
-                <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                Utilisateur
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="votre-email@example.com"
-                autoComplete="email"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all text-gray-800 bg-white"
-                disabled={loading}
-              />
-            </div>
-
-            <div>
-              <label className="flex items-center gap-2 text-gray-800 font-bold mb-2 text-sm">
-                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                Mot de passe
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="••••••••"
-                autoComplete="current-password"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all text-gray-800 bg-white"
-                disabled={loading}
-              />
-            </div>
-
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
+          <form onSubmit={handleLogin} className="space-y-6">
+            {/* Message d'erreur */}
             {error && (
-              <div className="p-3 bg-red-50 border-2 border-red-300 rounded-xl">
-                <p className="text-red-700 font-semibold text-sm flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {error}
-                </p>
+              <div className="bg-red-50 border-2 border-red-400 text-red-800 px-4 py-3 rounded-lg text-sm font-medium">
+                {error}
               </div>
             )}
 
+            {/* Email */}
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-semibold text-gray-700 mb-2"
+              >
+                Adresse email
+              </label>
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="vous@exemple.com"
+                autoComplete="email"
+                disabled={loading}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+              />
+            </div>
+
+            {/* Mot de passe avec œil */}
+            <PasswordInput
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Votre mot de passe"
+              required
+              disabled={loading}
+              id="password"
+              name="password"
+              label="Mot de passe"
+              labelIcon={
+                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              }
+            />
+
+            {/* Se souvenir de moi + Mot de passe oublié */}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
+                />
+                <span className="text-sm text-gray-700">Se souvenir de moi</span>
+              </label>
+              <Link
+                href="/mot-de-passe-oublie"
+                className="text-sm text-orange-600 hover:text-orange-700 font-semibold"
+              >
+                Mot de passe oublié ?
+              </Link>
+            </div>
+
+            {/* Bouton submit */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-orange-500 via-green-500 to-teal-500 text-white py-4 rounded-xl text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+              className="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-sky-500 text-white font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
@@ -178,69 +187,47 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* ✅ NOUVEAU : Lien inscription */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Pas encore de compte ?{" "}
-              <Link
-                href="/register"
-                className="font-bold text-orange-600 hover:text-orange-700 transition-colors"
-              >
-                Créer un compte gratuitement
-              </Link>
-            </p>
-          </div>
-
-          {/* Comptes de test */}
-          <div className="mt-6 p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl border border-blue-200">
-            <p className="text-xs font-bold text-gray-700 mb-2 flex items-center gap-2">
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Comptes de test
-            </p>
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => { setEmail('pacousstar01@gmail.com'); setPassword('client') }}
-                className="w-full flex items-center gap-2 p-2 bg-white rounded-lg hover:shadow-md transition-all text-left text-xs"
-              >
-                <span className="text-lg">👤</span>
-                <div className="flex-1">
-                  <div className="font-bold text-gray-800">Client</div>
-                  <code className="text-gray-600 text-[10px]">pacousstar01@gmail.com</code>
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => { setEmail('pacous2000@gmail.com'); setPassword('admin') }}
-                className="w-full flex items-center gap-2 p-2 bg-white rounded-lg hover:shadow-md transition-all text-left text-xs"
-              >
-                <span className="text-lg">👨‍💼</span>
-                <div className="flex-1">
-                  <div className="font-bold text-gray-800">Admin</div>
-                  <code className="text-gray-600 text-[10px]">pacous2000@gmail.com</code>
-                </div>
-              </button>
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Ou</span>
             </div>
           </div>
+
+          {/* Lien inscription */}
+          <p className="text-center text-sm text-gray-600">
+            Vous n'avez pas de compte ?{" "}
+            <Link
+              href="/register"
+              className="font-semibold text-orange-600 hover:text-orange-700"
+            >
+              Créer un compte
+            </Link>
+          </p>
+
+          {/* Lien retour accueil */}
+          <div className="mt-6 text-center">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-orange-600 transition"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Retour à l'accueil
+            </Link>
+          </div>
         </div>
 
-        {/* ✅ NOUVEAU : Lien retour accueil */}
-        <div className="mt-6 text-center">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-orange-600 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Retour à l'accueil
+        {/* Footer */}
+        <p className="text-center text-xs text-gray-500 mt-6">
+          © 2026 Solution360° - Tous droits réservés |{" "}
+          <Link href="/termes" className="hover:text-orange-600 transition">
+            Termes et conditions
           </Link>
-        </div>
-
-        <p className="text-center text-xs text-gray-600 mt-4">
-          © 2026 Solution360° - Tous droits réservés
         </p>
       </div>
     </div>

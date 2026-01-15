@@ -3,12 +3,15 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import PasswordInput from "@/components/PasswordInput";
 
 export default function RegisterForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -18,12 +21,18 @@ export default function RegisterForm() {
 
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
     const fullName = formData.get("fullName") as string;
+    const acceptTerms = formData.get("acceptTerms") === "on";
 
     // Validation simple
     if (!email || !password || !fullName) {
       setError("Tous les champs sont obligatoires");
+      setLoading(false);
+      return;
+    }
+
+    if (!acceptTerms) {
+      setError("Vous devez accepter les termes et conditions");
       setLoading(false);
       return;
     }
@@ -131,23 +140,38 @@ export default function RegisterForm() {
           />
         </div>
 
-        {/* Mot de passe */}
-        <div>
-          <label
-            htmlFor="password"
-            className="block text-sm font-semibold text-gray-700 mb-2"
-          >
-            Mot de passe
-          </label>
+        {/* Mot de passe avec œil */}
+        <PasswordInput
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Min. 6 caractères"
+          required
+          disabled={loading}
+          id="password"
+          name="password"
+          label="Mot de passe"
+          labelIcon={
+            <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          }
+        />
+
+        {/* Termes et conditions */}
+        <div className="flex items-start gap-2">
           <input
-            type="password"
-            id="password"
-            name="password"
+            type="checkbox"
+            id="acceptTerms"
+            name="acceptTerms"
             required
-            minLength={6}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
-            placeholder="Min. 6 caractères"
+            className="mt-1 w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
           />
+          <label htmlFor="acceptTerms" className="text-sm text-gray-700">
+            J'accepte les{" "}
+            <Link href="/termes" className="text-orange-600 hover:text-orange-700 font-semibold">
+              termes et conditions
+            </Link>
+          </label>
         </div>
 
         {/* Bouton submit */}
@@ -170,13 +194,29 @@ export default function RegisterForm() {
         </div>
       </div>
 
+      {/* Lien connexion */}
+      <p className="text-center text-sm text-gray-600">
+        Vous avez déjà un compte ?{" "}
+        <Link
+          href="/login"
+          className="font-semibold text-orange-600 hover:text-orange-700"
+        >
+          Se connecter
+        </Link>
+      </p>
+
       {/* Lien retour accueil */}
-      <a
-        href="/"
-        className="block text-center text-sm text-gray-600 hover:text-orange-600 transition"
-      >
-        ← Retour à l'accueil
-      </a>
+      <div className="mt-6 text-center">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-orange-600 transition"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Retour à l'accueil
+        </Link>
+      </div>
     </div>
   );
 }

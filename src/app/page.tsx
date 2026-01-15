@@ -16,9 +16,9 @@ export default async function HomePage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-sky-50 overflow-hidden">
+    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-orange-900/20 to-sky-900/30 overflow-hidden">
       {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200 shadow-sm">
+      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-gray-300 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Logo size="md" href="/" />
@@ -51,12 +51,12 @@ export default async function HomePage() {
 
         <div className="relative max-w-7xl mx-auto">
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-orange-200 shadow-lg mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/95 backdrop-blur-xl border border-orange-300 shadow-xl mb-8">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
               </span>
-              <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <span className="text-xs font-semibold text-gray-800 uppercase tracking-wider">
                 🚀 Alimenté par l'IA GPT-4o & DeepSeek
               </span>
             </div>
@@ -116,12 +116,12 @@ export default async function HomePage() {
               ].map((stat, index) => (
                 <div
                   key={index}
-                  className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 shadow-lg hover:shadow-xl transition-all"
+                  className="bg-white/95 backdrop-blur-xl rounded-2xl p-6 border border-gray-300 shadow-xl hover:shadow-2xl transition-all"
                 >
                   <div className="text-3xl font-black bg-gradient-to-r from-orange-600 to-sky-600 bg-clip-text text-transparent mb-2">
                     {stat.value}
                   </div>
-                  <div className="text-sm text-gray-600 font-medium">
+                  <div className="text-sm text-gray-700 font-semibold">
                     {stat.label}
                   </div>
                 </div>
@@ -132,7 +132,7 @@ export default async function HomePage() {
       </section>
 
       {/* How it Works */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white/50 backdrop-blur-sm">
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-900 mb-4">
@@ -202,7 +202,7 @@ export default async function HomePage() {
       </section>
 
       {/* Features */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8">
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-gray-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-900 mb-4">
@@ -238,7 +238,7 @@ export default async function HomePage() {
             ].map((feature, index) => (
               <div
                 key={index}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 shadow-lg hover:shadow-xl hover:scale-105 transition-all text-center"
+                className="bg-white rounded-2xl p-6 border-2 border-gray-200 shadow-xl hover:shadow-2xl hover:scale-105 transition-all text-center"
               >
                 <div className="text-5xl mb-4">{feature.icon}</div>
                 <h4 className="text-lg font-bold text-gray-900 mb-2">
