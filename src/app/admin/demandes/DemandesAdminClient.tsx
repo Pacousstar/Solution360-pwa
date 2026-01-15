@@ -357,12 +357,14 @@ export default function DemandesAdminClient({
                           <div className="flex items-center justify-end gap-2">
                             <Link
                               href={`/admin/detail/${d.id}`}
+                              prefetch={true}
                               className="inline-flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200 text-xs"
                             >
                               Détail
                             </Link>
                             <Link
                               href={`/admin/gerer/${d.id}`}
+                              prefetch={true}
                               className="inline-flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl font-semibold shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200 text-xs"
                             >
                               Gérer
@@ -472,12 +474,14 @@ function DemandeCard({
       <div className="flex gap-2">
         <Link
           href={`/admin/detail/${demande.id}`}
+          prefetch={true}
           className="flex-1 px-3 py-1.5 bg-blue-500 text-white rounded-lg text-xs font-bold text-center hover:bg-blue-600 transition-colors"
         >
           Voir
         </Link>
         <Link
           href={`/admin/gerer/${demande.id}`}
+          prefetch={true}
           className="flex-1 px-3 py-1.5 bg-orange-500 text-white rounded-lg text-xs font-bold text-center hover:bg-orange-600 transition-colors"
         >
           Gérer
