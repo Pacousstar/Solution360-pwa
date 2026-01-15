@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { creerDemande } from "./actions";
 import Link from "next/link";
+import Logo from "@/components/Logo";
 
 const typesProjet = [
   "Site web",
@@ -85,11 +86,7 @@ export default function NouvelleDemandePage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/demandes">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-sky-500 shadow-lg cursor-pointer hover:scale-105 transition-transform">
-                  <span className="text-lg font-black text-white">S360</span>
-                </div>
-              </Link>
+              <Logo size="md" href="/demandes" showText={false} />
               <div>
                 <p className="text-xs font-semibold text-orange-600 uppercase tracking-wider">
                   Nouvelle demande

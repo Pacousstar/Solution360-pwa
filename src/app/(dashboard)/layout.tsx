@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { logout } from "../(auth)/actions";
 import { createClient } from "@/lib/supabase/server";
+import Logo from "@/components/Logo";
 
 export default async function DashboardLayout({
   children,
@@ -27,14 +28,7 @@ export default async function DashboardLayout({
       {/* Header */}
       <header className="sticky top-0 z-10 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-sky-500">
-              <span className="text-sm font-bold text-white">S360</span>
-            </div>
-            <span className="text-sm font-semibold text-gray-900">
-              Solution360°
-            </span>
-          </div>
+          <Logo size="sm" href="/demandes" />
 
           {user && (
             <div className="flex items-center gap-3">
@@ -94,6 +88,18 @@ export default async function DashboardLayout({
 
       {/* Main content */}
       <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
+
+      {/* Footer */}
+      <footer className="mt-auto border-t border-gray-200 bg-white/60 backdrop-blur-sm py-8">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <Logo size="sm" href="/" />
+            <p className="text-xs text-gray-500">
+              © 2026 GSN EXPERTISES GROUP - Solution360° - Tous droits réservés
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

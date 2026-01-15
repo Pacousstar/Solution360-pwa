@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import Logo from "@/components/Logo";
 
 export default async function HomePage() {
   // Vérifier si l'utilisateur est connecté
@@ -20,14 +21,7 @@ export default async function HomePage() {
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-sky-500 shadow-lg">
-                <span className="text-lg font-black text-white">S360</span>
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-orange-600 to-sky-600 bg-clip-text text-transparent">
-                Solution360°
-              </span>
-            </div>
+            <Logo size="md" href="/" />
             <div className="flex items-center gap-3">
               <Link
                 href="/login"
@@ -287,11 +281,8 @@ export default async function HomePage() {
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-sky-500">
-              <span className="text-lg font-black text-white">S360</span>
-            </div>
-            <span className="text-xl font-bold">Solution360°</span>
+          <div className="flex items-center justify-center mb-4">
+            <Logo size="lg" href="/" className="text-white" />
           </div>
           <p className="text-gray-400 mb-6">
             Plateforme de consulting digital alimentée par l'IA

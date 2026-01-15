@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import RegisterForm from "./RegisterForm";
+import Logo from "@/components/Logo";
 
 export default async function RegisterPage() {
   const supabase = await createClient();
@@ -18,8 +19,8 @@ export default async function RegisterPage() {
       <div className="w-full max-w-md">
         {/* Logo et titre */}
         <div className="text-center mb-8">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-sky-500 shadow-2xl mx-auto mb-4">
-            <span className="text-2xl font-black text-white">S360</span>
+          <div className="flex justify-center mb-4">
+            <Logo size="lg" href="/" showText={false} />
           </div>
           <h1 className="text-3xl font-black text-gray-900 mb-2">
             Créer un compte

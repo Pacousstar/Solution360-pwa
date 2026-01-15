@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
+import Logo from "@/components/Logo";
 
 type Request = {
   id: string;
@@ -84,11 +85,7 @@ export default function StatsContent({ demandes }: { demandes: Request[] }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/demandes">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 shadow-lg cursor-pointer hover:scale-105 transition-transform">
-                  <span className="text-lg font-black text-white">📊</span>
-                </div>
-              </Link>
+              <Logo size="md" href="/demandes" showText={false} />
               <div>
                 <p className="text-xs font-semibold text-purple-600 uppercase tracking-wider">
                   Statistiques

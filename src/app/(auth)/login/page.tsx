@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
 import { logger } from '@/lib/logger'
+import Logo from '@/components/Logo'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -95,11 +96,9 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo + Titre */}
         <div className="text-center mb-10">
-          <Link href="/" className="inline-block">
-            <div className="mx-auto w-28 h-28 bg-gradient-to-br from-orange-500 to-green-600 rounded-3xl flex items-center justify-center shadow-2xl mb-5 transform hover:scale-110 transition-transform duration-300">
-              <span className="text-3xl font-bold text-white">360°</span>
-            </div>
-          </Link>
+          <div className="flex justify-center mb-5">
+            <Logo size="xl" href="/" showText={false} />
+          </div>
           <h1 className="text-4xl md:text-5xl font-black mb-2 bg-gradient-to-r from-orange-600 via-green-600 to-teal-600 bg-clip-text text-transparent">
             Solution360°
           </h1>

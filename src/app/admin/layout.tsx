@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/admin/permissions";
+import Logo from "@/components/Logo";
 
 async function logout() {
   "use server";
@@ -44,11 +45,7 @@ export default async function AdminLayout({
           <div className="flex items-center justify-between">
             {/* Logo + Titre */}
             <div className="flex items-center gap-4">
-              <Link href="/admin/demandes">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-sky-500 shadow-lg cursor-pointer hover:scale-105 transition-transform">
-                  <span className="text-lg font-black text-white">S360</span>
-                </div>
-              </Link>
+              <Logo size="md" href="/admin/demandes" showText={false} />
               <div>
                 <p className="text-xs font-semibold text-orange-600 uppercase tracking-wider">
                   Administration
@@ -168,6 +165,18 @@ export default async function AdminLayout({
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
+
+      {/* Footer */}
+      <footer className="mt-auto border-t border-orange-200 bg-white/60 backdrop-blur-sm py-8">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <Logo size="sm" href="/admin/demandes" />
+            <p className="text-xs text-gray-500">
+              © 2026 GSN EXPERTISES GROUP - Solution360° Admin - Tous droits réservés
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
