@@ -208,7 +208,7 @@ export default function ProfilContent({ user }: { user: User }) {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Logo size="md" href="/demandes" showText={false} />
+              <Logo size="md" href="/" showText={false} />
               <div>
                 <p className="text-xs font-semibold text-orange-600 uppercase tracking-wider">
                   Mon Profil

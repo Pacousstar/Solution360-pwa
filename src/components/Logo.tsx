@@ -1,5 +1,5 @@
 // /src/components/Logo.tsx
-// ✅ Composant Logo réutilisable pour Solution360°
+// ✅ Composant Logo réutilisable pour Solution360° avec fond sombre
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -8,26 +8,29 @@ interface LogoProps {
   showText?: boolean;
   href?: string;
   className?: string;
+  darkBackground?: boolean; // Option pour fond sombre (par défaut true)
 }
 
 const sizeMap = {
-  sm: { logo: 24, text: 'text-sm' },
-  md: { logo: 32, text: 'text-base' },
-  lg: { logo: 48, text: 'text-lg' },
-  xl: { logo: 64, text: 'text-xl' },
+  sm: { logo: 24, text: 'text-sm', padding: 'p-1' },
+  md: { logo: 32, text: 'text-base', padding: 'p-1.5' },
+  lg: { logo: 48, text: 'text-lg', padding: 'p-2' },
+  xl: { logo: 64, text: 'text-xl', padding: 'p-2.5' },
 };
 
 export default function Logo({ 
   size = 'md', 
   showText = true, 
-  href = '/',
-  className = ''
+  href = '/', // Toujours vers la page d'accueil par défaut
+  className = '',
+  darkBackground = true // Fond sombre par défaut pour meilleur contraste
 }: LogoProps) {
-  const { logo: logoSize, text: textSize } = sizeMap[size];
+  const { logo: logoSize, text: textSize, padding } = sizeMap[size];
   
   const logoContent = (
     <div className={`flex items-center gap-2 ${className}`}>
-      <div className="relative flex-shrink-0">
+      {/* Conteneur avec fond sombre pour meilleur contraste */}
+      <div className={`relative flex-shrink-0 rounded-lg ${darkBackground ? 'bg-gray-900' : 'bg-transparent'} ${padding} shadow-lg`}>
         <Image
           src="/logo.png"
           alt="Solution360° Logo"
@@ -45,14 +48,15 @@ export default function Logo({
     </div>
   );
 
-  if (href) {
-    return (
-      <Link href={href} className="hover:opacity-80 transition-opacity">
-        {logoContent}
-      </Link>
-    );
-  }
-
-  return logoContent;
+  // Toujours rendre le logo cliquable vers la page d'accueil
+  return (
+    <Link 
+      href={href || '/'} 
+      className="hover:opacity-80 transition-opacity inline-block"
+      title="Retour à l'accueil"
+    >
+      {logoContent}
+    </Link>
+  );
 }
 

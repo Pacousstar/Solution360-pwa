@@ -45,7 +45,7 @@ export default async function AdminLayout({
           <div className="flex items-center justify-between">
             {/* Logo + Titre */}
             <div className="flex items-center gap-4">
-              <Logo size="md" href="/admin/demandes" showText={false} />
+              <Logo size="md" href="/" showText={false} />
               <div>
                 <p className="text-xs font-semibold text-orange-600 uppercase tracking-wider">
                   Administration
@@ -170,7 +170,7 @@ export default async function AdminLayout({
       <footer className="mt-auto border-t border-orange-200 bg-white/60 backdrop-blur-sm py-8">
         <div className="mx-auto max-w-7xl px-4">
           <div className="flex flex-col items-center gap-4 text-center">
-            <Logo size="sm" href="/admin/demandes" />
+            <Logo size="sm" href="/" />
             <p className="text-xs text-gray-500">
               © 2026 GSN EXPERTISES GROUP - Solution360° Admin - Tous droits réservés
             </p>
