@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   logger.log("🚀 API /api/analyze-request appelée");
   
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = await createClient();
 
     const {
       data: { user },
