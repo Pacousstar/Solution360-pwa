@@ -12,14 +12,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    // 2. Vérifier les permissions admin
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role, is_admin')
-      .eq('id', user.id)
-      .single();
+    // 2. Vérifier les permissions admin (utiliser la fonction centralisée)
+    const { isAdmin } = await import('@/lib/admin/permissions');
+    const adminStatus = await isAdmin(user.id, user.email || undefined);
 
-    if (!profile || !profile.is_admin) {
+    if (!adminStatus) {
       return NextResponse.json({ error: 'Permissions insuffisantes' }, { status: 403 });
     }
 
@@ -58,7 +55,11 @@ export async function POST(request: Request) {
     });
 
     // 7. Envoyer l'email au client
-    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://solution360.app';
+    let baseUrl = process.env.NEXT_PUBLIC_URL || 'https://solution360.app';
+    // Ajouter https:// si manquant
+    if (baseUrl && !baseUrl.startsWith('http')) {
+      baseUrl = `https://${baseUrl}`;
+    }
     const emailHtml = getQuoteEmailTemplate({
       clientName,
       requestTitle,
