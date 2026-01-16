@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { validateStatusChange } from "@/lib/validation/business-rules";
 
 interface GererDemandeClientProps {
   demande: any;
@@ -229,15 +230,30 @@ L'équipe Solution360°`,
   const updateStatus = async (newStatus: string) => {
     setUpdating(true);
     setMessage("");
-    const supabase = createClient();
+    
+    // ✅ VALIDATION RÈGLES MÉTIER (PRIORITÉ ABSOLUE)
+    const validation = validateStatusChange(
+      demande.status || 'pending',
+      newStatus,
+      demande,
+      deliverables.length,
+      false // paymentConfirmed - sera vérifié via webhook paiement plus tard
+    );
 
-    // Validation règles métier
-    if (newStatus === "awaiting_payment" && !demande.final_price) {
-      setMessage("❌ Impossible : Vous devez d'abord envoyer un devis (onglet Tarification)");
+    if (!validation.valid) {
+      setMessage(validation.error || '❌ Validation échouée');
       setUpdating(false);
-      setActiveTab("tarification");
+      
+      // Rediriger vers l'onglet approprié selon l'erreur
+      if (validation.error?.includes('devis') || validation.error?.includes('prix')) {
+        setActiveTab("tarification");
+      } else if (validation.error?.includes('livrable')) {
+        setActiveTab("livrables");
+      }
       return;
     }
+
+    const supabase = createClient();
 
     const { error } = await supabase
       .from("requests")
