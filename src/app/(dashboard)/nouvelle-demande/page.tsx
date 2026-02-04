@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { creerDemande } from "./actions";
 import Link from "next/link";
 import Logo from "@/components/Logo";
+import { Card, CardBody, CardHeader, CardTitle, Input, Select, Textarea, Button, Alert } from "@/components/ui";
+import { Zap, Lightbulb, Send } from "lucide-react";
 
 const typesProjet = [
   "Site web",
@@ -108,314 +110,198 @@ export default function NouvelleDemandePage() {
 
       {/* Intro */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-gradient-to-r from-orange-50 to-sky-50 rounded-2xl border-2 border-orange-200 p-6 mb-8">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-sky-500 shadow-lg flex-shrink-0">
-              <svg
-                className="w-6 h-6 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                />
-              </svg>
+        <Card variant="bordered" className="bg-gradient-to-r from-orange-50 to-sky-50 border-orange-200 mb-8">
+          <CardBody className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-sky-500 shadow-lg flex-shrink-0">
+                <Lightbulb className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <CardTitle className="mb-2">
+                  💡 Comment ça marche ?
+                </CardTitle>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  Décrivez votre projet ci-dessous. <strong>Solution360°</strong> analysera
+                  votre demande et vous proposera une estimation transparente en FCFA
+                  adaptée à vos besoins.
+                </p>
+              </div>
             </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-black text-gray-900 mb-2">
-                💡 Comment ça marche ?
-              </h2>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                Décrivez votre projet ci-dessous. <strong>Solution360°</strong> analysera
-                votre demande et vous proposera une estimation transparente en FCFA
-                adaptée à vos besoins.
-              </p>
-            </div>
-          </div>
-        </div>
+          </CardBody>
+        </Card>
 
         {/* Message de feedback */}
         {message && (
-          <div
-            className={`mb-6 p-4 rounded-xl border-2 font-semibold ${
-              isError
-                ? "bg-red-50 border-red-300 text-red-800"
-                : "bg-green-50 border-green-300 text-green-800"
-            }`}
+          <Alert
+            variant={isError ? 'error' : 'success'}
+            className="mb-6"
           >
             {message}
-          </div>
+          </Alert>
         )}
 
         {/* Formulaire */}
-        <form
-          className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden"
-          action={(formData) => {
-            startTransition(() => handleSubmit(formData));
-          }}
-        >
-          <div className="p-8 space-y-8">
-            {/* Titre + Bouton exemple */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
-              <div className="flex-1 w-full space-y-2">
-                <label
-                  htmlFor="titre"
-                  className="block text-sm font-bold text-gray-700"
-                >
-                  Titre du projet
-                </label>
-                <input
-                  id="titre"
-                  name="titre"
-                  type="text"
-                  placeholder="Ex. Landing page pour Solution360°"
-                  value={titre}
-                  onChange={(e) => setTitre(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 transition-all"
-                />
-                <p className="text-xs text-gray-500">
-                  Un titre court et clair pour retrouver facilement votre demande.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={remplirExemple}
-                className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-orange-100 to-sky-100 border-2 border-orange-200 text-orange-700 font-bold text-sm hover:from-orange-200 hover:to-sky-200 transition-all whitespace-nowrap"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-                Exemple
-              </button>
-            </div>
-
-            {/* Type + Budget */}
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label
-                  htmlFor="type"
-                  className="block text-sm font-bold text-gray-700"
-                >
-                  Type de projet
-                </label>
-                <select
-                  id="type"
-                  name="type"
-                  value={type}
-                  onChange={(e) => setType(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 transition-all"
-                >
-                  <option value="">Sélectionner un type</option>
-                  {typesProjet.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-                {type === "Autre" && (
-                  <input
+        <Card variant="elevated" className="overflow-hidden">
+          <form
+            action={(formData) => {
+              startTransition(() => handleSubmit(formData));
+            }}
+          >
+            <CardBody className="p-8 space-y-8">
+              {/* Titre + Bouton exemple */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
+                <div className="flex-1 w-full">
+                  <Input
+                    id="titre"
+                    name="titre"
                     type="text"
-                    placeholder="Précisez votre type de projet"
-                    value={typeAutre}
-                    onChange={(e) => setTypeAutre(e.target.value)}
-                    className="mt-2 w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 transition-all"
+                    label="Titre du projet"
+                    placeholder="Ex. Landing page pour Solution360°"
+                    value={titre}
+                    onChange={(e) => setTitre(e.target.value)}
+                    helperText="Un titre court et clair pour retrouver facilement votre demande."
+                    required
                   />
-                )}
-                <p className="text-xs text-gray-500">
-                  Cela aide <strong>Solution360°</strong> à adapter les questions et l'estimation.
-                </p>
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={remplirExemple}
+                  variant="outline"
+                  size="md"
+                  leftIcon={<Zap className="w-4 h-4" />}
+                  className="whitespace-nowrap"
+                >
+                  Exemple
+                </Button>
               </div>
 
-              <div className="space-y-2">
-                <label
-                  htmlFor="budget"
-                  className="block text-sm font-bold text-gray-700"
-                >
-                  Budget cible en FCFA <span className="text-gray-400">(optionnel)</span>
-                </label>
-                <input
+              {/* Type + Budget */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Select
+                    id="type"
+                    name="type"
+                    label="Type de projet"
+                    value={type}
+                    onChange={(e) => setType(e.target.value)}
+                    options={[
+                      { value: '', label: 'Sélectionner un type' },
+                      ...typesProjet.map((t) => ({ value: t, label: t })),
+                    ]}
+                    helperText="Cela aide Solution360° à adapter les questions et l'estimation."
+                    required
+                  />
+                  {type === "Autre" && (
+                    <Input
+                      type="text"
+                      placeholder="Précisez votre type de projet"
+                      value={typeAutre}
+                      onChange={(e) => setTypeAutre(e.target.value)}
+                      className="mt-2"
+                    />
+                  )}
+                </div>
+
+                <Input
                   id="budget"
                   name="budget"
                   type="text"
+                  label={
+                    <>
+                      Budget cible en FCFA <span className="text-gray-400 font-normal">(optionnel)</span>
+                    </>
+                  }
                   placeholder="Ex. 500 000 – 1 000 000 FCFA"
                   value={budget}
                   onChange={(e) => setBudget(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 transition-all"
+                  helperText="Donnez une fourchette en FCFA. Solution360° restera dans cette zone."
                 />
-                <p className="text-xs text-gray-500">
-                  Donnez une fourchette en FCFA. <strong>Solution360°</strong> restera dans cette zone.
-                </p>
               </div>
-            </div>
 
-            {/* Complexité / Urgence (Phase IA retirée) */}
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="block text-sm font-bold text-gray-700">
-                  Complexité
-                </label>
-                <select
+              {/* Complexité / Urgence */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <Select
+                  label="Complexité"
                   value={complexite ?? ""}
                   onChange={(e) => setComplexite(e.target.value || null)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 transition-all"
-                >
-                  <option value="">Sélectionner</option>
-                  {niveauxComplexite.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500">
-                  Complexité globale du projet (fonctionnalités, contraintes).
-                </p>
-              </div>
+                  options={[
+                    { value: '', label: 'Sélectionner' },
+                    ...niveauxComplexite.map((c) => ({ value: c, label: c })),
+                  ]}
+                  helperText="Complexité globale du projet (fonctionnalités, contraintes)."
+                />
 
-              <div className="space-y-2">
-                <label className="block text-sm font-bold text-gray-700">
-                  Urgence
-                </label>
-                <select
+                <Select
+                  label="Urgence"
                   value={urgence ?? ""}
                   onChange={(e) => setUrgence(e.target.value || null)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 transition-all"
-                >
-                  <option value="">Sélectionner</option>
-                  {niveauxUrgence.map((u) => (
-                    <option key={u} value={u}>
-                      {u}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500">
-                  Urgence perçue (délais, contraintes externes).
+                  options={[
+                    { value: '', label: 'Sélectionner' },
+                    ...niveauxUrgence.map((u) => ({ value: u, label: u })),
+                  ]}
+                  helperText="Urgence perçue (délais, contraintes externes)."
+                />
+              </div>
+              {/* Description */}
+              <div>
+                <Textarea
+                  id="description"
+                  name="description"
+                  label="Description détaillée"
+                  rows={6}
+                  placeholder="Expliquez ce que vous voulez obtenir, votre contexte, vos objectifs et vos contraintes..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  required
+                />
+
+                {/* Astuce Solution360° */}
+                <Card variant="bordered" className="bg-gradient-to-r from-orange-50 to-sky-50 border-orange-200 mt-4">
+                  <CardBody className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-sky-500 flex-shrink-0">
+                        <Lightbulb className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-bold text-orange-800 mb-1">
+                          💡 Astuce Solution360°
+                        </p>
+                        <p className="text-xs text-orange-700 leading-relaxed">
+                          Donnez des exemples concrets, votre audience cible, et ce que
+                          vous considérez comme un livrable &quot;réussi&quot;. Plus vous
+                          êtes précis, plus <strong>Solution360°</strong> pourra proposer un
+                          plan pertinent.
+                        </p>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+              </div>
+            </CardBody>
+
+            {/* Footer avec CTA */}
+            <div className="bg-gradient-to-r from-orange-50 to-sky-50 px-8 py-6 border-t-2 border-orange-200">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p className="text-xs text-gray-600">
+                  💳 Vous pourrez valider ou ajuster le prix en FCFA avant tout
+                  paiement.
                 </p>
+                <Button
+                  type="submit"
+                  disabled={isPending}
+                  isLoading={isPending}
+                  variant="primary"
+                  size="lg"
+                  leftIcon={!isPending ? <Send className="w-5 h-5" /> : undefined}
+                  className="w-full sm:w-auto"
+                >
+                  {isPending ? 'Envoi en cours...' : 'Envoyer pour analyse'}
+                </Button>
               </div>
             </div>
-            {/* Description */}
-            <div className="space-y-2">
-              <label
-                htmlFor="description"
-                className="block text-sm font-bold text-gray-700"
-              >
-                Description détaillée
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                rows={6}
-                placeholder="Expliquez ce que vous voulez obtenir, votre contexte, vos objectifs et vos contraintes..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 transition-all resize-none"
-              />
-
-              {/* Astuce Solution360° */}
-              <div className="rounded-xl bg-gradient-to-r from-orange-50 to-sky-50 border-2 border-orange-200 p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-sky-500 flex-shrink-0">
-                    <svg
-                      className="w-4 h-4 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-orange-800 mb-1">
-                      💡 Astuce Solution360°
-                    </p>
-                    <p className="text-xs text-orange-700 leading-relaxed">
-                      Donnez des exemples concrets, votre audience cible, et ce que
-                      vous considérez comme un livrable &quot;réussi&quot;. Plus vous
-                      êtes précis, plus <strong>Solution360°</strong> pourra proposer un
-                      plan pertinent.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Footer avec CTA */}
-          <div className="bg-gradient-to-r from-orange-50 to-sky-50 px-8 py-6 border-t-2 border-orange-200">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-xs text-gray-600">
-                💳 Vous pourrez valider ou ajuster le prix en FCFA avant tout
-                paiement.
-              </p>
-              <button
-                type="submit"
-                disabled={isPending}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-orange-500 to-sky-500 text-white font-bold text-sm shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
-              >
-                {isPending ? (
-                  <>
-                    <svg
-                      className="animate-spin h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Envoi en cours...
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                      />
-                    </svg>
-                    Envoyer pour analyse
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </form>
+          </form>
+        </Card>
       </section>
     </div>
   );

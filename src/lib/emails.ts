@@ -1,7 +1,11 @@
 import { Resend } from 'resend';
+import { logger } from './logger';
 
-// Initialiser Resend avec la clé API
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialiser Resend avec la clé API (seulement si disponible)
+// Si pas de clé, resend sera null et on utilisera le mode dev
+const resend = process.env.RESEND_API_KEY 
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 export interface EmailOptions {
   to: string;
@@ -20,10 +24,10 @@ export async function sendEmail({
   from = 'Solution360° <noreply@solution360.app>', // À changer selon votre domaine configuré dans Resend
 }: EmailOptions) {
   try {
-    // Si pas de clé API, logger sans envoyer (mode développement)
-    if (!process.env.RESEND_API_KEY) {
-      console.log('📧 [DEV MODE] Email à envoyer:', { to, subject });
-      console.log('📧 [DEV MODE] Contenu HTML:', html.substring(0, 200) + '...');
+    // Si pas de clé API ou resend non initialisé, logger sans envoyer (mode développement)
+    if (!resend || !process.env.RESEND_API_KEY) {
+      logger.log('📧 [DEV MODE] Email à envoyer:', { to, subject });
+      logger.log('📧 [DEV MODE] Contenu HTML:', html.substring(0, 200) + '...');
       return { success: true, id: 'dev-mode', error: null };
     }
 
@@ -35,14 +39,14 @@ export async function sendEmail({
     });
 
     if (error) {
-      console.error('❌ Erreur Resend:', error);
+      logger.error('❌ Erreur Resend:', error);
       return { success: false, id: null, error };
     }
 
-    console.log('✅ Email envoyé avec succès:', data?.id);
+    logger.log('✅ Email envoyé avec succès:', data?.id);
     return { success: true, id: data?.id || null, error: null };
   } catch (error: any) {
-    console.error('❌ Erreur sendEmail:', error);
+    logger.error('❌ Erreur sendEmail:', error);
     return { success: false, id: null, error: error.message || 'Erreur inconnue' };
   }
 }

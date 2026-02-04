@@ -3,6 +3,9 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import Logo from '@/components/Logo'
+import { Card, CardBody, CardHeader, CardTitle, Input, Button, Alert } from '@/components/ui'
+import { Mail, ArrowLeft } from 'lucide-react'
+import { logger } from '@/lib/logger'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -16,22 +19,88 @@ export default function ForgotPasswordPage() {
     setError('')
     setSuccess(false)
 
-    try {
-      const supabase = createClient()
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
-      })
+    // Validation de l'email
+    if (!email || !email.includes('@')) {
+      setError('Veuillez entrer une adresse email valide')
+      setLoading(false)
+      return
+    }
 
-      if (resetError) {
-        setError(resetError.message)
+    try {
+      // Vérifier que les variables d'environnement sont disponibles
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        logger.error('❌ Variables d\'environnement Supabase manquantes')
+        setError('Erreur de configuration. Veuillez contacter le support.')
         setLoading(false)
         return
       }
 
+      const supabase = createClient()
+      
+      // Vérifier que le client est bien créé
+      if (!supabase) {
+        logger.error('❌ Impossible de créer le client Supabase')
+        setError('Erreur de connexion. Veuillez réessayer.')
+        setLoading(false)
+        return
+      }
+
+      // Utiliser process.env.NEXT_PUBLIC_URL ou window.location.origin de manière sécurisée
+      const redirectUrl = typeof window !== 'undefined' && window.location
+        ? `${window.location.origin}/auth/callback?type=recovery`
+        : `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/auth/callback?type=recovery`
+
+      logger.log('🔐 Envoi demande reset password pour:', email)
+      logger.log('🔗 URL de redirection:', redirectUrl)
+      logger.log('🔗 Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
+
+      // Appel à l'API Supabase avec timeout
+      const resetPromise = supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
+      })
+
+      // Ajouter un timeout de 10 secondes
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout: La requête a pris trop de temps')), 10000)
+      })
+
+      const { error: resetError } = await Promise.race([resetPromise, timeoutPromise]) as any
+
+      if (resetError) {
+        logger.error('❌ Erreur reset password:', resetError)
+        
+        // Messages d'erreur plus spécifiques
+        let errorMessage = 'Erreur lors de l\'envoi de l\'email'
+        if (resetError.message?.includes('network') || resetError.message?.includes('fetch')) {
+          errorMessage = 'Erreur de connexion réseau. Vérifiez votre connexion internet.'
+        } else if (resetError.message?.includes('email')) {
+          errorMessage = resetError.message
+        } else if (resetError.message) {
+          errorMessage = resetError.message
+        }
+        
+        setError(errorMessage)
+        setLoading(false)
+        return
+      }
+
+      logger.log('✅ Email de réinitialisation envoyé avec succès')
       setSuccess(true)
       setLoading(false)
     } catch (err: any) {
-      setError(err?.message || 'Une erreur est survenue')
+      logger.error('❌ Erreur catch reset password:', err)
+      
+      // Messages d'erreur plus spécifiques
+      let errorMessage = 'Une erreur est survenue. Veuillez réessayer.'
+      if (err?.message?.includes('Timeout')) {
+        errorMessage = 'La requête a pris trop de temps. Vérifiez votre connexion internet.'
+      } else if (err?.message?.includes('network') || err?.message?.includes('fetch')) {
+        errorMessage = 'Erreur de connexion réseau. Vérifiez votre connexion internet et réessayez.'
+      } else if (err?.message) {
+        errorMessage = err.message
+      }
+      
+      setError(errorMessage)
       setLoading(false)
     }
   }
@@ -53,66 +122,63 @@ export default function ForgotPasswordPage() {
         </div>
 
         {/* Formulaire */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
-          {success ? (
-            <div className="text-center space-y-4">
-              <div className="bg-green-50 border-2 border-green-400 text-green-800 px-4 py-3 rounded-lg text-sm font-medium">
-                ✅ Email envoyé ! Vérifiez votre boîte de réception.
+        <Card variant="elevated">
+          <CardBody className="p-8">
+            {success ? (
+              <div className="text-center space-y-4">
+                <Alert variant="success">
+                  Email envoyé ! Vérifiez votre boîte de réception.
+                </Alert>
+                <Link href="/login">
+                  <Button variant="outline" size="sm">
+                    Retour à la connexion
+                  </Button>
+                </Link>
               </div>
-              <Link
-                href="/login"
-                className="inline-block text-sm text-orange-600 hover:text-orange-700 font-semibold"
-              >
-                Retour à la connexion
-              </Link>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <div className="bg-red-50 border-2 border-red-400 text-red-800 px-4 py-3 rounded-lg text-sm font-medium">
-                  {error}
-                </div>
-              )}
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {error && (
+                  <Alert variant="error">
+                    {error}
+                  </Alert>
+                )}
 
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-semibold text-gray-700 mb-2"
-                >
-                  Adresse email
-                </label>
-                <input
+                <Input
                   type="email"
                   id="email"
+                  label="Adresse email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  required
                   placeholder="vous@exemple.com"
                   autoComplete="email"
                   disabled={loading}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+                  required
+                  leftIcon={<Mail className="h-5 w-5" />}
                 />
-              </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-sky-500 text-white font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
-              >
-                {loading ? 'Envoi en cours...' : 'Envoyer le lien de réinitialisation'}
-              </button>
-            </form>
-          )}
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  isLoading={loading}
+                  variant="primary"
+                  size="lg"
+                  className="w-full"
+                  leftIcon={!loading ? <Mail className="w-5 h-5" /> : undefined}
+                >
+                  {loading ? 'Envoi en cours...' : 'Envoyer le lien de réinitialisation'}
+                </Button>
+              </form>
+            )}
 
-          <div className="mt-6 text-center">
-            <Link
-              href="/login"
-              className="text-sm text-gray-600 hover:text-orange-600 transition"
-            >
-              ← Retour à la connexion
-            </Link>
-          </div>
-        </div>
+            <div className="mt-6 text-center">
+              <Link href="/login">
+                <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="w-4 h-4" />}>
+                  Retour à la connexion
+                </Button>
+              </Link>
+            </div>
+          </CardBody>
+        </Card>
       </div>
     </div>
   )

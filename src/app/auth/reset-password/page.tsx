@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import Logo from '@/components/Logo'
 import PasswordInput from '@/components/PasswordInput'
+import { logger } from '@/lib/logger'
 
 function ResetPasswordForm() {
   const router = useRouter()
@@ -16,10 +17,26 @@ function ResetPasswordForm() {
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    // Vérifier qu'on a bien un code de réinitialisation
+    // Vérifier qu'on a bien un code de réinitialisation OU qu'on est déjà authentifié
     const code = searchParams.get('code')
-    if (!code) {
-      setError('Lien de réinitialisation invalide. Veuillez utiliser le lien envoyé par email.')
+    const errorParam = searchParams.get('error')
+    
+    if (errorParam === 'exchange_failed') {
+      setError('Le lien de réinitialisation a expiré ou est invalide. Veuillez demander un nouveau lien.')
+    } else if (!code) {
+      // Vérifier si on a déjà une session (si le callback a déjà échangé le code)
+      const checkSession = async () => {
+        try {
+          const supabase = createClient()
+          const { data: { session } } = await supabase.auth.getSession()
+          if (!session) {
+            setError('Lien de réinitialisation invalide. Veuillez utiliser le lien envoyé par email.')
+          }
+        } catch (err) {
+          setError('Lien de réinitialisation invalide. Veuillez utiliser le lien envoyé par email.')
+        }
+      }
+      checkSession()
     }
   }, [searchParams])
 
@@ -44,17 +61,39 @@ function ResetPasswordForm() {
       const supabase = createClient()
       const code = searchParams.get('code')
       
-      // Si on a un code, l'échanger d'abord contre une session
-      if (code) {
+      // Vérifier d'abord si on a déjà une session (si le callback a déjà échangé le code)
+      let hasSession = false
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (session) {
+        hasSession = true
+        logger.log('✅ Session déjà active, pas besoin d\'échanger le code')
+      } else if (code) {
+        // Si on a un code mais pas de session, l'échanger d'abord contre une session
+        logger.log('🔐 Échange du code contre une session...')
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
         if (exchangeError) {
-          setError('Code de réinitialisation invalide ou expiré')
+          logger.error('❌ Erreur exchange code:', exchangeError)
+          setError('Code de réinitialisation invalide ou expiré. Veuillez demander un nouveau lien.')
           setLoading(false)
           return
         }
+        logger.log('✅ Code échangé avec succès')
+        hasSession = true
+      } else {
+        setError('Aucune session active. Veuillez utiliser le lien envoyé par email.')
+        setLoading(false)
+        return
+      }
+
+      if (!hasSession) {
+        setError('Impossible de vérifier votre identité. Veuillez demander un nouveau lien.')
+        setLoading(false)
+        return
       }
 
       // Mettre à jour le mot de passe
+      logger.log('🔐 Mise à jour du mot de passe...')
       const { error: updateError } = await supabase.auth.updateUser({
         password: password,
       })

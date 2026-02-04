@@ -7,6 +7,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { logger } from "@/lib/logger";
 import Logo from "@/components/Logo";
+import { Card, CardBody, CardHeader, CardTitle, Input, Button, Alert } from "@/components/ui";
+import { Camera, Save, LogOut } from "lucide-react";
 
 type User = {
   id: string;
@@ -159,7 +161,7 @@ export default function ProfilContent({ user }: { user: User }) {
         avatar_url: avatarUrl, // ✅ Sauvegarder l'URL de l'avatar
       };
   
-      console.log("💾 Données à sauvegarder:", updateData);
+      logger.log("💾 Données à sauvegarder:", updateData);
   
       const { error } = await supabase.auth.updateUser({
         data: updateData,
@@ -231,18 +233,15 @@ export default function ProfilContent({ user }: { user: User }) {
       {/* Contenu */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {message && (
-          <div
-            className={`mb-6 p-4 rounded-xl border-2 font-semibold ${
-              message.includes("✅")
-                ? "bg-green-50 border-green-300 text-green-800"
-                : "bg-red-50 border-red-300 text-red-800"
-            }`}
+          <Alert
+            variant={message.includes("✅") ? "success" : "error"}
+            className="mb-6"
           >
             {message}
-          </div>
+          </Alert>
         )}
 
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
+        <Card variant="elevated" className="overflow-hidden">
           {/* Section Avatar */}
 <div className="bg-gradient-to-r from-orange-500 via-sky-500 to-green-500 px-8 py-12 text-center">
   <div className="relative inline-block">
@@ -276,25 +275,7 @@ export default function ProfilContent({ user }: { user: User }) {
       htmlFor="avatar-upload"
       className="absolute bottom-0 right-0 flex items-center justify-center w-10 h-10 rounded-full bg-white border-2 border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors shadow-lg"
     >
-      <svg
-        className="w-5 h-5 text-gray-600"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-        />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-        />
-      </svg>
+      <Camera className="w-5 h-5 text-gray-600" />
       <input
         id="avatar-upload"
         type="file"
@@ -312,20 +293,16 @@ export default function ProfilContent({ user }: { user: User }) {
 </div>
 
           {/* Formulaire */}
-          <div className="p-8 space-y-6">
+          <CardBody className="p-8 space-y-6">
             {/* Nom complet */}
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                Nom complet
-              </label>
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Jean Dupont"
-                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 transition-all"
-              />
-            </div>
+            <Input
+              type="text"
+              label="Nom complet"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Jean Dupont"
+              required
+            />
 
             {/* Sexe */}
             <div>
@@ -361,51 +338,47 @@ export default function ProfilContent({ user }: { user: User }) {
             </div>
 
             {/* Téléphone */}
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                Téléphone (optionnel)
-              </label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+225 XX XX XX XX XX"
-                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 transition-all"
-              />
-            </div>
+            <Input
+              type="tel"
+              label="Téléphone (optionnel)"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+225 XX XX XX XX XX"
+            />
 
             {/* Entreprise */}
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                Entreprise (optionnel)
-              </label>
-              <input
-                type="text"
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                placeholder="Nom de votre entreprise"
-                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 transition-all"
-              />
-            </div>
+            <Input
+              type="text"
+              label="Entreprise (optionnel)"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              placeholder="Nom de votre entreprise"
+            />
 
             {/* Boutons */}
             <div className="flex gap-4 pt-4">
-              <button
+              <Button
                 onClick={handleUpdateProfile}
                 disabled={updating || uploading}
-                className="flex-1 px-6 py-4 rounded-xl bg-gradient-to-r from-orange-500 to-sky-500 text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
+                isLoading={updating}
+                variant="primary"
+                size="lg"
+                leftIcon={!updating ? <Save className="w-5 h-5" /> : undefined}
+                className="flex-1"
               >
-                {updating ? "Enregistrement..." : "💾 Sauvegarder"}
-              </button>
-              <button
+                {updating ? "Enregistrement..." : "Sauvegarder"}
+              </Button>
+              <Button
                 onClick={handleLogout}
-                className="px-6 py-4 rounded-xl border-2 border-red-300 bg-red-50 text-red-700 font-bold hover:bg-red-100 transition-all"
+                variant="danger"
+                size="lg"
+                leftIcon={<LogOut className="w-5 h-5" />}
               >
-                🚪 Déconnexion
-              </button>
+                Déconnexion
+              </Button>
             </div>
-          </div>
-        </div>
+          </CardBody>
+        </Card>
       </main>
     </div>
   );

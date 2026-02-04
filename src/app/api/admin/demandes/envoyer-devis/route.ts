@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { sendEmail, getQuoteEmailTemplate } from '@/lib/emails';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -20,15 +21,49 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Permissions insuffisantes' }, { status: 403 });
     }
 
-    // 3. Récupérer les données
+    // 3. Récupérer et valider les données
     const { requestId, finalPrice, priceJustification, clientEmail, clientName, requestTitle } = await request.json();
+
+    // Validation de sécurité
+    const { isValidUUID, isValidPrice, isValidEmail, validateTextLength, sanitizeString, checkRateLimit } = await import('@/lib/security');
+    
+    // Rate limiting
+    const rateLimitKey = `envoyer-devis:${user.id}`;
+    if (!checkRateLimit(rateLimitKey, 10, 60000)) { // 10 requêtes par minute
+      return NextResponse.json(
+        { error: 'Trop de requêtes. Veuillez patienter.' },
+        { status: 429 }
+      );
+    }
+
+    // Validation
+    if (!isValidUUID(requestId)) {
+      return NextResponse.json({ error: 'requestId invalide' }, { status: 400 });
+    }
+
+    if (!isValidPrice(finalPrice)) {
+      return NextResponse.json({ error: 'Prix invalide (0-100000000 FCFA)' }, { status: 400 });
+    }
+
+    if (!isValidEmail(clientEmail)) {
+      return NextResponse.json({ error: 'Email client invalide' }, { status: 400 });
+    }
+
+    if (!validateTextLength(priceJustification || '', 10, 2000)) {
+      return NextResponse.json({ error: 'Justification invalide (10-2000 caractères)' }, { status: 400 });
+    }
+
+    // Sanitization
+    const sanitizedJustification = sanitizeString(priceJustification);
+    const sanitizedClientName = sanitizeString(clientName || '');
+    const sanitizedTitle = sanitizeString(requestTitle || '');
 
     // 4. Mettre à jour la demande
     const { error: updateError } = await supabase
       .from('requests')
       .update({
         final_price: finalPrice,
-        price_justification: priceJustification,
+        price_justification: sanitizedJustification,
         status: 'awaiting_payment',
         quote_sent_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -51,7 +86,7 @@ export async function POST(request: Request) {
       request_id: requestId,
       admin_user_id: user.id,
       note_type: 'internal',
-      content: `Devis envoyé : ${finalPrice.toLocaleString()} FCFA - ${priceJustification.substring(0, 100)}...`
+      content: `Devis envoyé : ${finalPrice.toLocaleString()} FCFA - ${sanitizedJustification.substring(0, 100)}...`
     });
 
     // 7. Envoyer l'email au client
@@ -61,10 +96,10 @@ export async function POST(request: Request) {
       baseUrl = `https://${baseUrl}`;
     }
     const emailHtml = getQuoteEmailTemplate({
-      clientName,
-      requestTitle,
+      clientName: sanitizedClientName,
+      requestTitle: sanitizedTitle,
       finalPrice,
-      priceJustification,
+      priceJustification: sanitizedJustification,
       requestId,
       baseUrl,
     });
@@ -76,7 +111,7 @@ export async function POST(request: Request) {
     });
 
     if (!emailResult.success) {
-      console.error('⚠️ Erreur lors de l\'envoi de l\'email:', emailResult.error);
+      logger.error('⚠️ Erreur lors de l\'envoi de l\'email:', emailResult.error);
       // Ne pas bloquer la réponse si l'email échoue
     }
 
@@ -86,9 +121,9 @@ export async function POST(request: Request) {
     });
 
   } catch (error: any) {
-    console.error('Erreur envoyer-devis:', error);
+    logger.error('Erreur envoyer-devis:', error);
     return NextResponse.json({ 
-      error: error.message || 'Erreur serveur' 
+      error: 'Erreur serveur. Veuillez réessayer.' 
     }, { status: 500 });
   }
 }

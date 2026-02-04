@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { Card, CardBody, CardHeader, CardTitle, Input, Select, Button, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui";
+import { Search, LayoutGrid, Table2, Download, BarChart3 } from "lucide-react";
 
 interface Demande {
   id: string;
@@ -105,17 +107,7 @@ export default function DemandesAdminClient({
     return statusMap[status] || { label: status, emoji: "❓" };
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      draft: "bg-gray-100 text-gray-700 border-gray-300",
-      analysis: "bg-orange-100 text-orange-700 border-orange-300",
-      awaiting_payment: "bg-yellow-100 text-yellow-700 border-yellow-300",
-      in_production: "bg-blue-100 text-blue-700 border-blue-300",
-      delivered: "bg-green-100 text-green-700 border-green-300",
-      cancelled: "bg-red-100 text-red-700 border-red-300",
-    };
-    return colors[status] || "bg-gray-100 text-gray-700 border-gray-300";
-  };
+  // Fonction getStatusColor supprimée - maintenant gérée par le composant Badge
 
   return (
     <div>
@@ -149,80 +141,104 @@ export default function DemandesAdminClient({
       </div>
 
       {/* Barre de recherche + filtres */}
-      <div className="bg-white rounded-2xl p-6 shadow-lg mb-8">
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* Recherche */}
-          <div className="flex-1 relative">
-            <svg
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+      <Card variant="elevated" className="mb-8">
+        <CardBody className="p-6">
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Recherche */}
+            <div className="flex-1">
+              <Input
+                type="text"
+                placeholder="Rechercher par titre, client, email, ID..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                leftIcon={<Search className="h-5 w-5" />}
               />
-            </svg>
-            <input
-              type="text"
-              placeholder="Rechercher par titre, client, email, ID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 transition-all"
+            </div>
+
+            {/* Filtre statut */}
+            <Select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              options={[
+                { value: 'all', label: '📋 Tous les statuts' },
+                { value: 'draft', label: '🖊️ Brouillon' },
+                { value: 'analysis', label: '🤖 Analyse IA' },
+                { value: 'awaiting_payment', label: '💳 Attente Paiement' },
+                { value: 'in_production', label: '⚙️ En Production' },
+                { value: 'delivered', label: '✅ Livré' },
+                { value: 'cancelled', label: '❌ Annulé' },
+              ]}
+              className="min-w-[200px]"
             />
+
+            {/* Actions */}
+            <div className="flex gap-2 items-center">
+              <Link href="/admin/analytics">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  leftIcon={<BarChart3 className="w-4 h-4" />}
+                >
+                  Analytics
+                </Button>
+              </Link>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    const response = await fetch("/api/admin/export-csv");
+                    if (response.ok) {
+                      const blob = await response.blob();
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `demandes-${new Date().toISOString().split("T")[0]}.csv`;
+                      document.body.appendChild(a);
+                      a.click();
+                      window.URL.revokeObjectURL(url);
+                      document.body.removeChild(a);
+                    }
+                  } catch (error) {
+                    console.error("Erreur lors de l'export:", error);
+                  }
+                }}
+                leftIcon={<Download className="w-4 h-4" />}
+              >
+                Export CSV
+              </Button>
+            </div>
+
+            {/* Toggle vue */}
+            <div className="flex gap-2 bg-gray-100 p-1 rounded-xl">
+              <Button
+                onClick={() => setViewMode("kanban")}
+                variant={viewMode === "kanban" ? "primary" : "ghost"}
+                size="sm"
+                leftIcon={<LayoutGrid className="w-4 h-4" />}
+              >
+                Kanban
+              </Button>
+              <Button
+                onClick={() => setViewMode("table")}
+                variant={viewMode === "table" ? "primary" : "ghost"}
+                size="sm"
+                leftIcon={<Table2 className="w-4 h-4" />}
+              >
+                Tableau
+              </Button>
+            </div>
           </div>
 
-          {/* Filtre statut */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 transition-all bg-white font-semibold"
-          >
-            <option value="all">📋 Tous les statuts</option>
-            <option value="draft">🖊️ Brouillon</option>
-            <option value="analysis">🤖 Analyse IA</option>
-            <option value="awaiting_payment">💳 Attente Paiement</option>
-            <option value="in_production">⚙️ En Production</option>
-            <option value="delivered">✅ Livré</option>
-            <option value="cancelled">❌ Annulé</option>
-          </select>
-
-          {/* Toggle vue */}
-          <div className="flex gap-2 bg-gray-100 p-1 rounded-xl">
-            <button
-              onClick={() => setViewMode("kanban")}
-              className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-                viewMode === "kanban"
-                  ? "bg-white text-orange-600 shadow-md"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              📋 Kanban
-            </button>
-            <button
-              onClick={() => setViewMode("table")}
-              className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-                viewMode === "table"
-                  ? "bg-white text-orange-600 shadow-md"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              📊 Tableau
-            </button>
+          {/* Compteur résultats */}
+          <div className="mt-4 text-sm text-gray-600">
+            <span className="font-semibold text-orange-600">
+              {filteredDemandes.length}
+            </span>{" "}
+            résultat(s) trouvé(s)
           </div>
-        </div>
-
-        {/* Compteur résultats */}
-        <div className="mt-4 text-sm text-gray-600">
-          <span className="font-semibold text-orange-600">
-            {filteredDemandes.length}
-          </span>{" "}
-          résultat(s) trouvé(s)
-        </div>
-      </div>
+        </CardBody>
+      </Card>
 
       {/* Vue Kanban */}
       {viewMode === "kanban" && (
@@ -231,23 +247,24 @@ export default function DemandesAdminClient({
             const statusInfo = formatStatus(status);
             return (
               <div key={status} className="flex flex-col">
-                <div className="bg-white rounded-t-2xl p-4 border-b-4 border-orange-300 shadow-lg">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-black text-gray-900 flex items-center gap-2">
-                      <span className="text-2xl">{statusInfo.emoji}</span>
-                      <span className="text-sm">{statusInfo.label}</span>
-                    </h3>
-                    <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold">
-                      {demandes.length}
-                    </span>
-                  </div>
-                </div>
+                <Card variant="bordered" className="rounded-t-2xl rounded-b-none border-b-4 border-orange-300">
+                  <CardBody className="p-4">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2 text-sm">
+                        <span className="text-2xl">{statusInfo.emoji}</span>
+                        <span>{statusInfo.label}</span>
+                      </CardTitle>
+                      <Badge variant="default" size="sm">
+                        {demandes.length}
+                      </Badge>
+                    </div>
+                  </CardBody>
+                </Card>
                 <div className="bg-gray-50 rounded-b-2xl p-3 space-y-3 min-h-[200px] flex-1">
                   {demandes.map((demande) => (
                     <DemandeCard
                       key={demande.id}
                       demande={demande}
-                      getStatusColor={getStatusColor}
                     />
                   ))}
                   {demandes.length === 0 && (
@@ -264,139 +281,116 @@ export default function DemandesAdminClient({
 
       {/* Vue Tableau */}
       {viewMode === "table" && (
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gradient-to-r from-orange-100 to-sky-100">
-                <tr className="border-b-2 border-orange-300">
-                  <th className="p-4 text-left font-bold text-gray-800">ID</th>
-                  <th className="p-4 text-left font-bold text-gray-800">
-                    Client
-                  </th>
-                  <th className="p-4 text-left font-bold text-gray-800">
-                    Projet
-                  </th>
-                  <th className="p-4 text-center font-bold text-gray-800">
-                    Statut
-                  </th>
-                  <th className="p-4 text-right font-bold text-gray-800">
-                    Prix IA
-                  </th>
-                  <th className="p-4 text-right font-bold text-gray-800">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredDemandes.length > 0 ? (
-                  filteredDemandes.map((d) => {
-                    const statusInfo = formatStatus(d.status);
-                    const clientName =
-                      d.user?.raw_user_meta_data?.full_name ||
-                      d.user?.email ||
-                      "Client";
-                    const clientEmail = d.user?.email || "";
-                    const clientPhone =
-                      d.user?.raw_user_meta_data?.phone || "";
+        <Card variant="elevated" className="overflow-hidden">
+          <Table striped hover>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Client</TableHead>
+                <TableHead>Projet</TableHead>
+                <TableHead className="text-center">Statut</TableHead>
+                <TableHead className="text-right">Prix IA</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredDemandes.length > 0 ? (
+                filteredDemandes.map((d) => {
+                  const statusInfo = formatStatus(d.status);
+                  const clientName =
+                    d.user?.raw_user_meta_data?.full_name ||
+                    d.user?.email ||
+                    "Client";
+                  const clientEmail = d.user?.email || "";
+                  const clientPhone =
+                    d.user?.raw_user_meta_data?.phone || "";
 
-                    return (
-                      <tr
-                        key={d.id}
-                        className="border-b border-gray-100 hover:bg-orange-50 transition-all duration-200"
-                      >
-                        <td className="p-4">
-                          <span className="font-mono text-xs bg-orange-100 text-orange-700 px-3 py-1 rounded-lg font-semibold">
-                            #{d.id?.slice(-6) || "N/A"}
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          <div>
-                            <p className="font-bold text-gray-900">
-                              {clientName}
-                            </p>
-                            <p className="text-xs text-gray-600">
-                              {clientEmail}
-                            </p>
-                            {clientPhone && (
-                              <p className="text-xs text-gray-500">
-                                📞 {clientPhone}
-                              </p>
-                            )}
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <div className="font-bold text-gray-900">
-                            {d.title || "Projet"}
-                          </div>
-                          <div className="text-gray-500 text-xs max-w-xs truncate mt-1">
-                            {(d.description || "Aucune description")
-                              .toString()
-                              .substring(0, 60)}
-                            ...
-                          </div>
-                        </td>
-                        <td className="p-4 text-center">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-bold border-2 ${getStatusColor(
-                              d.status
-                            )}`}
-                          >
-                            {statusInfo.emoji} {statusInfo.label}
-                          </span>
-                        </td>
-                        <td className="p-4 font-bold text-green-600 text-right text-base">
-                          {d.ai_analyses?.[0]?.estimated_price ? (
-                            `${d.ai_analyses[0].estimated_price.toLocaleString()} FCFA`
-                          ) : (
-                            <span className="text-gray-400 text-sm font-normal">
-                              À analyser
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Link
-                              href={`/admin/detail/${d.id}`}
-                              prefetch={true}
-                              className="inline-flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200 text-xs"
-                            >
-                              Détail
-                            </Link>
-                            <Link
-                              href={`/admin/gerer/${d.id}`}
-                              prefetch={true}
-                              className="inline-flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl font-semibold shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200 text-xs"
-                            >
-                              Gérer
-                            </Link>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="p-16">
-                      <div className="flex flex-col items-center gap-4 text-center">
-                        <div className="w-24 h-24 bg-orange-100 rounded-3xl flex items-center justify-center text-5xl shadow-lg">
-                          📭
-                        </div>
+                  return (
+                    <TableRow key={d.id}>
+                      <TableCell>
+                        <Badge variant="default" size="sm" className="font-mono">
+                          #{d.id?.slice(-6) || "N/A"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         <div>
-                          <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                            Aucune demande
-                          </h3>
-                          <p className="text-gray-500">
-                            Les demandes clients apparaîtront ici
+                          <p className="font-bold text-gray-900">
+                            {clientName}
                           </p>
+                          <p className="text-xs text-gray-600">
+                            {clientEmail}
+                          </p>
+                          {clientPhone && (
+                            <p className="text-xs text-gray-500">
+                              📞 {clientPhone}
+                            </p>
+                          )}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-bold text-gray-900">
+                          {d.title || "Projet"}
+                        </div>
+                        <div className="text-gray-500 text-xs max-w-xs truncate mt-1">
+                          {(d.description || "Aucune description")
+                            .toString()
+                            .substring(0, 60)}
+                          ...
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge status={d.status as any} size="sm">
+                          {statusInfo.emoji} {statusInfo.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-bold text-green-600 text-right text-base">
+                        {d.ai_analyses?.[0]?.estimated_price ? (
+                          `${d.ai_analyses[0].estimated_price.toLocaleString()} FCFA`
+                        ) : (
+                          <span className="text-gray-400 text-sm font-normal">
+                            À analyser
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link href={`/admin/detail/${d.id}`} prefetch={true}>
+                            <Button variant="secondary" size="sm">
+                              Détail
+                            </Button>
+                          </Link>
+                          <Link href={`/admin/gerer/${d.id}`} prefetch={true}>
+                            <Button variant="primary" size="sm">
+                              Gérer
+                            </Button>
+                          </Link>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="p-16">
+                    <div className="flex flex-col items-center gap-4 text-center">
+                      <div className="w-24 h-24 bg-orange-100 rounded-3xl flex items-center justify-center text-5xl shadow-lg">
+                        📭
                       </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                      <div>
+                        <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                          Aucune demande
+                        </h3>
+                        <p className="text-gray-500">
+                          Les demandes clients apparaîtront ici
+                        </p>
+                      </div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );
@@ -417,30 +411,30 @@ function StatCard({
   subtitle?: string;
 }) {
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-gray-100 hover:shadow-xl transition-shadow">
-      <div className="flex items-center justify-between mb-3">
-        <div
-          className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-2xl shadow-md`}
-        >
-          {icon}
+    <Card variant="elevated" className="border-2 border-gray-100">
+      <CardBody className="p-6">
+        <div className="flex items-center justify-between mb-3">
+          <div
+            className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-2xl shadow-md`}
+          >
+            {icon}
+          </div>
         </div>
-      </div>
-      <p className="text-3xl font-black text-gray-900 mb-1">{value}</p>
-      <p className="text-sm font-semibold text-gray-600">
-        {title}
-        {subtitle && <span className="text-xs ml-1">({subtitle})</span>}
-      </p>
-    </div>
+        <p className="text-3xl font-black text-gray-900 mb-1">{value}</p>
+        <p className="text-sm font-semibold text-gray-600">
+          {title}
+          {subtitle && <span className="text-xs ml-1">({subtitle})</span>}
+        </p>
+      </CardBody>
+    </Card>
   );
 }
 
-// ✅ Composant DemandeCard (Kanban) - VERSION 1 CORRIGÉE
+// ✅ Composant DemandeCard (Kanban)
 function DemandeCard({
   demande,
-  getStatusColor,
 }: {
   demande: Demande;
-  getStatusColor: (status: string) => string;
 }) {
   const clientName =
     demande.user?.raw_user_meta_data?.full_name ||
@@ -450,43 +444,41 @@ function DemandeCard({
   const price = demande.ai_analyses?.[0]?.estimated_price;
 
   return (
-    <div className="bg-white rounded-xl p-4 shadow-md hover:shadow-xl transition-all hover:scale-[1.02] border-2 border-gray-200">
-      <div className="flex items-start justify-between mb-3">
-        <span className="font-mono text-[10px] bg-gray-100 text-gray-600 px-2 py-1 rounded font-bold">
-          #{demande.id.slice(-6)}
-        </span>
-        {price && (
-          <span className="text-xs font-bold text-green-600">
-            {(price / 1000).toFixed(0)}K
-          </span>
-        )}
-      </div>
+    <Card variant="bordered" className="hover:shadow-xl transition-all hover:scale-[1.02]">
+      <CardBody className="p-4">
+        <div className="flex items-start justify-between mb-3">
+          <Badge variant="gray" size="sm" className="font-mono text-[10px]">
+            #{demande.id.slice(-6)}
+          </Badge>
+          {price && (
+            <span className="text-xs font-bold text-green-600">
+              {(price / 1000).toFixed(0)}K
+            </span>
+          )}
+        </div>
 
-      <h4 className="font-bold text-gray-900 text-sm mb-2 line-clamp-2">
-        {demande.title}
-      </h4>
+        <h4 className="font-bold text-gray-900 text-sm mb-2 line-clamp-2">
+          {demande.title}
+        </h4>
 
-      <div className="text-xs text-gray-600 mb-3">
-        <p className="font-semibold">{clientName}</p>
-        <p className="text-[10px] truncate">{clientEmail}</p>
-      </div>
+        <div className="text-xs text-gray-600 mb-3">
+          <p className="font-semibold">{clientName}</p>
+          <p className="text-[10px] truncate">{clientEmail}</p>
+        </div>
 
-      <div className="flex gap-2">
-        <Link
-          href={`/admin/detail/${demande.id}`}
-          prefetch={true}
-          className="flex-1 px-3 py-1.5 bg-blue-500 text-white rounded-lg text-xs font-bold text-center hover:bg-blue-600 transition-colors"
-        >
-          Voir
-        </Link>
-        <Link
-          href={`/admin/gerer/${demande.id}`}
-          prefetch={true}
-          className="flex-1 px-3 py-1.5 bg-orange-500 text-white rounded-lg text-xs font-bold text-center hover:bg-orange-600 transition-colors"
-        >
-          Gérer
-        </Link>
-      </div>
-    </div>
+        <div className="flex gap-2">
+          <Link href={`/admin/detail/${demande.id}`} prefetch={true} className="flex-1">
+            <Button variant="secondary" size="sm" className="w-full">
+              Voir
+            </Button>
+          </Link>
+          <Link href={`/admin/gerer/${demande.id}`} prefetch={true} className="flex-1">
+            <Button variant="primary" size="sm" className="w-full">
+              Gérer
+            </Button>
+          </Link>
+        </div>
+      </CardBody>
+    </Card>
   );
 }

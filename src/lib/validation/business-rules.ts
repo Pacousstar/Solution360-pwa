@@ -30,8 +30,15 @@ export function validateAwaitingPayment(demande: any): ValidationResult {
 
 /**
  * RÈGLE 2 : Impossible de passer à `in_production` sans paiement confirmé
+ * @param demande - La demande à valider
+ * @param paymentConfirmed - Si true, le paiement est confirmé (vérifié via table payments)
+ * @param hasPaymentRecord - Si true, il existe un enregistrement de paiement (même en pending)
  */
-export function validateInProduction(demande: any, paymentConfirmed: boolean = false): ValidationResult {
+export function validateInProduction(
+  demande: any, 
+  paymentConfirmed: boolean = false,
+  hasPaymentRecord: boolean = false
+): ValidationResult {
   // Vérifier qu'il y a un prix final
   if (!demande.final_price || demande.final_price <= 0) {
     return {
@@ -40,17 +47,32 @@ export function validateInProduction(demande: any, paymentConfirmed: boolean = f
     };
   }
 
-  // Vérifier que le paiement est confirmé
-  // Note: Pour l'instant, on vérifie seulement que le statut précédent est awaiting_payment
-  // Quand le système de paiement sera implémenté, vérifier paymentConfirmed === true
-  if (demande.status !== 'awaiting_payment' && !paymentConfirmed) {
+  // Si le paiement est confirmé (via webhook), autoriser
+  if (paymentConfirmed) {
+    return { valid: true };
+  }
+
+  // Si le statut actuel est awaiting_payment, on peut passer en production
+  // (le paiement sera vérifié via la table payments dans l'appelant)
+  if (demande.status === 'awaiting_payment') {
+    // Si on a un enregistrement de paiement, on peut passer (même s'il est pending)
+    // car le webhook mettra à jour le statut automatiquement
+    if (hasPaymentRecord) {
+      return { valid: true };
+    }
+    
+    // Sinon, on exige que le paiement soit confirmé
     return {
       valid: false,
-      error: '❌ Impossible : Le paiement doit être confirmé avant de passer en production. Changez d\'abord le statut à "En attente de paiement" et attendez la confirmation du paiement.',
+      error: '❌ Impossible : Le paiement doit être confirmé avant de passer en production. Attendez la confirmation du paiement (le statut sera mis à jour automatiquement).',
     };
   }
 
-  return { valid: true };
+  // Si on n'est pas en awaiting_payment et pas de paiement confirmé, refuser
+  return {
+    valid: false,
+    error: '❌ Impossible : Le paiement doit être confirmé avant de passer en production. Changez d\'abord le statut à "En attente de paiement" et attendez la confirmation du paiement.',
+  };
 }
 
 /**
@@ -112,7 +134,8 @@ export function validateStatusChange(
   newStatus: string,
   demande: any,
   deliverablesCount: number = 0,
-  paymentConfirmed: boolean = false
+  paymentConfirmed: boolean = false,
+  hasPaymentRecord: boolean = false
 ): ValidationResult {
   // Vérifier la transition générale
   const transitionCheck = validateStatusTransition(oldStatus, newStatus);
@@ -126,7 +149,7 @@ export function validateStatusChange(
   }
 
   if (newStatus === 'in_production') {
-    return validateInProduction(demande, paymentConfirmed);
+    return validateInProduction(demande, paymentConfirmed, hasPaymentRecord);
   }
 
   if (newStatus === 'delivered') {

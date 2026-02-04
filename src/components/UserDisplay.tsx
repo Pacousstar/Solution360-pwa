@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createSupabaseClient } from '../lib/supabase-client';
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 
 interface User {
@@ -16,7 +16,7 @@ export default function UserDisplay() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const supabase = createSupabaseClient();
+    const supabase = createClient();
     
     const getUser = async () => {
       const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -78,7 +78,7 @@ export default function UserDisplay() {
       )}
       <form action={async () => {
         'use server';
-        const supabase = await import('@/lib/supabase-server').then(m => m.createSupabaseServerClient());
+        const supabase = await import('@/lib/supabase/server').then(m => m.createClient());
         await supabase.auth.signOut();
       }}>
         <button type="submit" className="text-gray-500 hover:text-red-500">✕</button>

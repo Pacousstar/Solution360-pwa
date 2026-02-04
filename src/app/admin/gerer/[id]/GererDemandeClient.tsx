@@ -5,6 +5,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { validateStatusChange } from "@/lib/validation/business-rules";
+import dynamic from "next/dynamic";
+import WorkflowTimelineClient from "@/components/WorkflowTimelineClient";
+import WorkflowGuide from "@/components/WorkflowGuide";
+
+// Lazy loading du composant de messagerie
+const MessageThread = dynamic(() => import("@/components/MessageThread"), {
+  loading: () => (
+    <div className="h-[600px] flex items-center justify-center">
+      <p className="text-gray-500">Chargement de la messagerie...</p>
+    </div>
+  ),
+  ssr: false,
+});
 
 interface GererDemandeClientProps {
   demande: any;
@@ -14,7 +27,7 @@ interface GererDemandeClientProps {
   uploadMessage?: string;
 }
 
-type TabType = "analyse" | "tarification" | "reponse" | "statut" | "notes" | "livrables";
+type TabType = "analyse" | "tarification" | "reponse" | "statut" | "notes" | "livrables" | "messagerie";
 
 export default function GererDemandeClient({
   demande: initialDemande,
@@ -32,6 +45,37 @@ export default function GererDemandeClient({
   const [uploading, setUploading] = useState(false);
   const [deliverables, setDeliverables] = useState(initialDeliverables);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+
+  // Récupérer l'ID de l'utilisateur actuel
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+    };
+    getCurrentUser();
+  }, []);
+
+  // Vérifier si un paiement existe
+  useEffect(() => {
+    const checkPayment = async () => {
+      const supabase = createClient();
+      const { data: payments } = await supabase
+        .from("payments")
+        .select("id, status")
+        .eq("request_id", demande.id)
+        .eq("status", "completed")
+        .limit(1);
+      
+      setHasPayment((payments?.length || 0) > 0);
+    };
+    checkPayment();
+  }, [demande.id]);
 
   // États pour Analyse IA
   const [analyzing, setAnalyzing] = useState(false);
@@ -231,13 +275,32 @@ L'équipe Solution360°`,
     setUpdating(true);
     setMessage("");
     
+    const supabase = createClient();
+
+    // Vérifier si un paiement est confirmé (pour in_production)
+    let paymentConfirmed = false;
+    let hasPaymentRecord = false;
+    
+    if (newStatus === 'in_production') {
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('id, status')
+        .eq('request_id', demande.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      hasPaymentRecord = (payments?.length || 0) > 0;
+      paymentConfirmed = payments?.some(p => p.status === 'completed') || false;
+    }
+    
     // ✅ VALIDATION RÈGLES MÉTIER (PRIORITÉ ABSOLUE)
     const validation = validateStatusChange(
       demande.status || 'pending',
       newStatus,
       demande,
       deliverables.length,
-      false // paymentConfirmed - sera vérifié via webhook paiement plus tard
+      paymentConfirmed,
+      hasPaymentRecord
     );
 
     if (!validation.valid) {
@@ -249,11 +312,11 @@ L'équipe Solution360°`,
         setActiveTab("tarification");
       } else if (validation.error?.includes('livrable')) {
         setActiveTab("livrables");
+      } else if (validation.error?.includes('paiement')) {
+        setActiveTab("statut");
       }
       return;
     }
-
-    const supabase = createClient();
 
     const { error } = await supabase
       .from("requests")
@@ -355,6 +418,7 @@ L'équipe Solution360°`,
     { id: "tarification" as TabType, label: "💰 Tarification", icon: "💰" },
     { id: "reponse" as TabType, label: "💬 Réponse", icon: "💬" },
     { id: "statut" as TabType, label: "🎯 Statut", icon: "🎯" },
+    { id: "messagerie" as TabType, label: "💌 Messagerie", icon: "💌" },
     { id: "notes" as TabType, label: "📝 Notes", icon: "📝" },
     { id: "livrables" as TabType, label: "📦 Livrables", icon: "📦" },
   ];
@@ -411,6 +475,23 @@ L'équipe Solution360°`,
             {message}
           </div>
         )}
+
+        {/* Timeline et Guide du Workflow */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <WorkflowTimelineClient
+            requestId={demande.id}
+            currentStatus={demande.status || "pending"}
+          />
+          <WorkflowGuide
+            currentStatus={demande.status || "pending"}
+            requestId={demande.id}
+            hasFinalPrice={!!demande.final_price}
+            hasPriceJustification={!!demande.price_justification}
+            hasDeliverables={deliverables.length > 0}
+            hasPayment={hasPayment}
+            isAdmin={true}
+          />
+        </div>
 
         {/* Onglets */}
         <div className="bg-white rounded-3xl shadow-2xl mb-8 overflow-hidden">
@@ -676,6 +757,27 @@ L'équipe Solution360°`,
                     ))}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* ONGLET : Messagerie */}
+            {activeTab === "messagerie" && (
+              <div className="space-y-6">
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-3xl p-8 border-2 border-purple-200">
+                  <h3 className="text-2xl font-black text-purple-900 mb-4">💌 Communication avec le client</h3>
+                  <p className="text-gray-700 mb-6">
+                    Échangez directement avec le client concernant cette demande. Les messages sont enregistrés et visibles par les deux parties.
+                  </p>
+                </div>
+                {currentUserId && (
+                  <div className="h-[600px]">
+                    <MessageThread
+                      requestId={demande.id}
+                      currentUserId={currentUserId}
+                      isAdmin={true}
+                    />
+                  </div>
+                )}
               </div>
             )}
 

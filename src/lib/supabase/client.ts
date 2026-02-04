@@ -1,6 +1,7 @@
 // /src/lib/supabase/client.ts
 // ✅ GESTION D'ERREURS AMÉLIORÉE - MonAP
 import { createBrowserClient } from "@supabase/ssr";
+import { logger } from "@/lib/logger";
 
 export function createClient() {
   // Vérifier les variables d'environnement
@@ -12,12 +13,20 @@ export function createClient() {
     if (!supabaseUrl) missing.push('NEXT_PUBLIC_SUPABASE_URL');
     if (!supabaseAnonKey) missing.push('NEXT_PUBLIC_SUPABASE_ANON_KEY');
     
-    throw new Error(
-      `❌ Variables d'environnement Supabase manquantes : ${missing.join(', ')}\n` +
+    const errorMessage = `❌ Variables d'environnement Supabase manquantes : ${missing.join(', ')}\n` +
       `Veuillez créer un fichier .env.local avec ces variables.\n` +
-      `Voir docs/ENV_TEMPLATE.md pour le template.`
-    );
+      `Voir docs/ENV_TEMPLATE.md pour le template.`;
+    
+    logger.error(errorMessage);
+    throw new Error(errorMessage);
   }
 
-  return createBrowserClient(supabaseUrl, supabaseAnonKey);
+  try {
+    const client = createBrowserClient(supabaseUrl, supabaseAnonKey);
+    logger.log('✅ Client Supabase créé avec succès');
+    return client;
+  } catch (error: any) {
+    logger.error('❌ Erreur lors de la création du client Supabase:', error);
+    throw new Error(`Erreur lors de l'initialisation de Supabase: ${error.message}`);
+  }
 }

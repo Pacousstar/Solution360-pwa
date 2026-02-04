@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { isAdmin } from '@/lib/admin/permissions';
 import { NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -27,9 +28,9 @@ export async function POST(request: Request) {
       email: user.email,
     });
   } catch (error: any) {
-    console.error('Erreur check-admin:', error);
+    logger.error('Erreur check-admin:', error);
     return NextResponse.json(
-      { error: error.message || 'Erreur serveur' },
+      { error: 'Erreur serveur. Veuillez réessayer.' },
       { status: 500 }
     );
   }

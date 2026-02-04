@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback, memo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Logo from "@/components/Logo";
+import { Card, CardHeader, CardTitle, CardBody, Badge, Button, Input } from "@/components/ui";
+import { Search, MessageSquare } from "lucide-react";
 
 type RequestRow = {
   id: string;
@@ -49,17 +51,7 @@ function formatStatus(s: string | null) {
   return map[s] || s;
 }
 
-function getStatusColor(s: string | null): string {
-  const colors: Record<string, string> = {
-    draft: "bg-gray-100 text-gray-700 border-gray-200",
-    analysis: "bg-blue-100 text-blue-700 border-blue-200",
-    awaiting_payment: "bg-orange-100 text-orange-700 border-orange-200",
-    in_production: "bg-purple-100 text-purple-700 border-purple-200",
-    delivered: "bg-green-100 text-green-700 border-green-200",
-    cancelled: "bg-red-100 text-red-700 border-red-200",
-  };
-  return colors[s || "draft"] || "bg-gray-100 text-gray-700 border-gray-200";
-}
+// Fonction getStatusColor supprimée - maintenant gérée par le composant Badge
 
 function formatBudget(b: number | null) {
   if (!b || Number.isNaN(b)) return "Non spécifié";
@@ -83,6 +75,36 @@ export default function DemandesContent({ demandes, userFullName }: Props) {
   const [filterStatus, setFilterStatus] = useState<"all" | "in_progress" | "completed">(
     "all"
   );
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+
+  // Récupérer les compteurs de messages non lus (memoized)
+  const fetchUnreadCounts = useCallback(async () => {
+    if (demandes.length === 0) return;
+
+    try {
+      const requestIds = demandes.map((d) => d.id);
+      const response = await fetch("/api/messages/unread-count", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ request_ids: requestIds }),
+      });
+
+      const data = await response.json();
+      if (data.ok && data.counts) {
+        setUnreadCounts(data.counts);
+      }
+    } catch (error) {
+      console.error("Erreur lors de la récupération des messages non lus:", error);
+    }
+  }, [demandes]);
+
+  useEffect(() => {
+    fetchUnreadCounts();
+    
+    // Rafraîchir toutes les 30 secondes
+    const interval = setInterval(fetchUnreadCounts, 30000);
+    return () => clearInterval(interval);
+  }, [fetchUnreadCounts]);
 
   // Filtrage et recherche
   const filteredDemandes = useMemo(() => {
@@ -200,33 +222,39 @@ export default function DemandesContent({ demandes, userFullName }: Props) {
       <section className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-4 border border-blue-200">
-              <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">
-                Total
-              </p>
-              <p className="text-3xl font-black text-blue-700">{stats.total}</p>
-              <p className="text-xs text-blue-600 mt-1">demande(s)</p>
-            </div>
+            <Card variant="bordered" className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+              <CardBody className="p-4">
+                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">
+                  Total
+                </p>
+                <p className="text-3xl font-black text-blue-700">{stats.total}</p>
+                <p className="text-xs text-blue-600 mt-1">demande(s)</p>
+              </CardBody>
+            </Card>
 
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-4 border border-orange-200">
-              <p className="text-xs font-semibold text-orange-600 uppercase tracking-wider mb-1">
-                En cours
-              </p>
-              <p className="text-3xl font-black text-orange-700">
-                {stats.inProgress}
-              </p>
-              <p className="text-xs text-orange-600 mt-1">active(s)</p>
-            </div>
+            <Card variant="bordered" className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+              <CardBody className="p-4">
+                <p className="text-xs font-semibold text-orange-600 uppercase tracking-wider mb-1">
+                  En cours
+                </p>
+                <p className="text-3xl font-black text-orange-700">
+                  {stats.inProgress}
+                </p>
+                <p className="text-xs text-orange-600 mt-1">active(s)</p>
+              </CardBody>
+            </Card>
 
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-4 border border-green-200">
-              <p className="text-xs font-semibold text-green-600 uppercase tracking-wider mb-1">
-                Terminées
-              </p>
-              <p className="text-3xl font-black text-green-700">
-                {stats.completed}
-              </p>
-              <p className="text-xs text-green-600 mt-1">livrée(s)</p>
-            </div>
+            <Card variant="bordered" className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+              <CardBody className="p-4">
+                <p className="text-xs font-semibold text-green-600 uppercase tracking-wider mb-1">
+                  Terminées
+                </p>
+                <p className="text-3xl font-black text-green-700">
+                  {stats.completed}
+                </p>
+                <p className="text-xs text-green-600 mt-1">livrée(s)</p>
+              </CardBody>
+            </Card>
           </div>
         </div>
       </section>
@@ -236,142 +264,37 @@ export default function DemandesContent({ demandes, userFullName }: Props) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           {/* Boutons de navigation */}
           <div className="flex items-center gap-3 mb-4">
-            <Link
-              href="/demandes"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500 text-white font-bold text-sm shadow-lg hover:shadow-xl hover:scale-105 transition-all"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              Mes demandes
-            </Link>
-
-            <Link
-              href="/nouvelle-demande"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 border-2 border-gray-200 text-gray-700 font-bold text-sm hover:bg-gray-200 hover:border-gray-300 transition-all"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              Nouvelle demande
-            </Link>
-          </div>
-
-          {/* Filtres */}
-          <div className="flex items-center gap-2 mb-4">
-            <button
-              onClick={() => setFilterStatus("all")}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                filterStatus === "all"
-                  ? "bg-gray-900 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              Tout ({stats.total})
-            </button>
-            <button
-              onClick={() => setFilterStatus("in_progress")}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                filterStatus === "in_progress"
-                  ? "bg-orange-500 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              En cours ({stats.inProgress})
-            </button>
-            <button
-              onClick={() => setFilterStatus("completed")}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                filterStatus === "completed"
-                  ? "bg-green-500 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              Terminées ({stats.completed})
-            </button>
-          </div>
-
-          {/* Barre de recherche */}
-          <div className="relative">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            <input
-              type="text"
-              placeholder="Rechercher par titre, numéro ou description..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 transition-all"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Liste des demandes */}
-      <main className="flex-1 bg-gradient-to-br from-slate-50 via-orange-50/30 to-sky-50/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {filteredDemandes.length === 0 ? (
-            <div className="bg-white rounded-2xl border-2 border-dashed border-gray-300 p-12 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 mx-auto mb-4">
-                <svg
-                  className="w-8 h-8 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
-                Aucune demande trouvée
-              </h3>
-              <p className="text-sm text-gray-600 mb-6">
-                {searchQuery
-                  ? "Essayez avec d'autres mots-clés"
-                  : "Créez votre première demande pour commencer"}
-              </p>
-              {!searchQuery && (
-                <Link
-                  href="/nouvelle-demande"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-sky-500 text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all"
-                >
+            <Link href="/demandes">
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={
                   <svg
-                    className="w-5 h-5"
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                }
+              >
+                Mes demandes
+              </Button>
+            </Link>
+
+            <Link href="/nouvelle-demande">
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={
+                  <svg
+                    className="w-4 h-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -383,10 +306,105 @@ export default function DemandesContent({ demandes, userFullName }: Props) {
                       d="M12 4v16m8-8H4"
                     />
                   </svg>
-                  Créer une demande
-                </Link>
-              )}
-            </div>
+                }
+              >
+                Nouvelle demande
+              </Button>
+            </Link>
+          </div>
+
+          {/* Filtres */}
+          <div className="flex items-center gap-2 mb-4">
+            <Button
+              onClick={() => setFilterStatus("all")}
+              variant={filterStatus === "all" ? "primary" : "ghost"}
+              size="sm"
+            >
+              Tout ({stats.total})
+            </Button>
+            <Button
+              onClick={() => setFilterStatus("in_progress")}
+              variant={filterStatus === "in_progress" ? "primary" : "ghost"}
+              size="sm"
+            >
+              En cours ({stats.inProgress})
+            </Button>
+            <Button
+              onClick={() => setFilterStatus("completed")}
+              variant={filterStatus === "completed" ? "success" : "ghost"}
+              size="sm"
+            >
+              Terminées ({stats.completed})
+            </Button>
+          </div>
+
+          {/* Barre de recherche */}
+          <Input
+            type="text"
+            placeholder="Rechercher par titre, numéro ou description..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            leftIcon={<Search className="h-5 w-5" />}
+          />
+        </div>
+      </section>
+
+      {/* Liste des demandes */}
+      <main className="flex-1 bg-gradient-to-br from-slate-50 via-orange-50/30 to-sky-50/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {filteredDemandes.length === 0 ? (
+            <Card variant="outlined" className="border-dashed p-12 text-center">
+              <CardBody>
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 mx-auto mb-4">
+                  <svg
+                    className="w-8 h-8 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                </div>
+                <CardTitle className="mb-2">
+                  Aucune demande trouvée
+                </CardTitle>
+                <p className="text-sm text-gray-600 mb-6">
+                  {searchQuery
+                    ? "Essayez avec d'autres mots-clés"
+                    : "Créez votre première demande pour commencer"}
+                </p>
+                {!searchQuery && (
+                  <Link href="/nouvelle-demande">
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      leftIcon={
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 4v16m8-8H4"
+                          />
+                        </svg>
+                      }
+                    >
+                      Créer une demande
+                    </Button>
+                  </Link>
+                )}
+              </CardBody>
+            </Card>
           ) : (
             <div className="grid gap-4">
               {filteredDemandes.map((d, index) => {
@@ -398,75 +416,88 @@ export default function DemandesContent({ demandes, userFullName }: Props) {
                   <Link
                     key={d.id}
                     href={`/demandes/${d.id}`}
-                    className="block bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-xl hover:border-orange-300 hover:-translate-y-1 transition-all duration-300 group"
+                    className="block"
                   >
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="px-3 py-1 rounded-full bg-gradient-to-r from-orange-500 to-sky-500 text-white text-xs font-black">
-                            #{requestNumber}
-                          </span>
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(
-                              d.status
-                            )}`}
-                          >
-                            {formatStatus(d.status)}
-                          </span>
+                    <Card
+                      variant="elevated"
+                      className="hover:border-orange-300 hover:-translate-y-1 transition-all duration-300 group"
+                    >
+                      <CardBody>
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <Badge variant="default" size="sm">
+                                #{requestNumber}
+                              </Badge>
+                              <Badge status={d.status as any} size="sm">
+                                {formatStatus(d.status)}
+                              </Badge>
+                              {unreadCounts[d.id] > 0 && (
+                                <Badge 
+                                  variant="default" 
+                                  size="sm"
+                                  className="bg-orange-500 text-white border-orange-600 flex items-center gap-1"
+                                >
+                                  <MessageSquare className="w-3 h-3" />
+                                  {unreadCounts[d.id]} nouveau{unreadCounts[d.id] > 1 ? 'x' : ''}
+                                </Badge>
+                              )}
+                            </div>
+                            <h3 className="font-black text-xl leading-tight text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-2 mb-2">
+                              {d.title}
+                            </h3>
+                            <p className="text-sm text-gray-600 line-clamp-2">
+                              {d.description}
+                            </p>
+                          </div>
+                          <div className="ml-4 text-right">
+                            <p className="text-xs text-gray-400 mb-1">Créée le</p>
+                            <p className="text-sm font-semibold text-gray-700">
+                              {formatDate(d.created_at)}
+                            </p>
+                          </div>
                         </div>
-                        <h3 className="font-black text-xl leading-tight text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-2 mb-2">
-                          {d.title}
-                        </h3>
-                        <p className="text-sm text-gray-600 line-clamp-2">
-                          {d.description}
-                        </p>
-                      </div>
-                      <div className="ml-4 text-right">
-                        <p className="text-xs text-gray-400 mb-1">Créée le</p>
-                        <p className="text-sm font-semibold text-gray-700">
-                          {formatDate(d.created_at)}
-                        </p>
-                      </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
-                      <div>
-                        <p className="text-xs text-gray-400 uppercase font-semibold mb-1">
-                          Budget
-                        </p>
-                        <p className="font-bold text-gray-900">
-                          {formatBudget(d.budget_proposed)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400 uppercase font-semibold mb-1">
-                          Urgence
-                        </p>
-                        <p className="font-semibold text-gray-700">
-                          {d.urgency || "—"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400 uppercase font-semibold mb-1">
-                          Complexité
-                        </p>
-                        <p className="font-semibold text-gray-700">
-                          {d.complexity || "—"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400 uppercase font-semibold mb-1">
-                          Phase IA
-                        </p>
-                        <p className="font-semibold text-blue-600">
-                          {d.ai_phase === "deepseek"
-                            ? "DeepSeek"
-                            : d.ai_phase === "gpt4o"
-                            ? "GPT-4o"
-                            : "—"}
-                        </p>
-                      </div>
-                    </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
+                          <div>
+                            <p className="text-xs text-gray-400 uppercase font-semibold mb-1">
+                              Budget
+                            </p>
+                            <p className="font-bold text-gray-900">
+                              {formatBudget(d.budget_proposed)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-400 uppercase font-semibold mb-1">
+                              Urgence
+                            </p>
+                            <p className="font-semibold text-gray-700">
+                              {d.urgency || "—"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-400 uppercase font-semibold mb-1">
+                              Complexité
+                            </p>
+                            <p className="font-semibold text-gray-700">
+                              {d.complexity || "—"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-400 uppercase font-semibold mb-1">
+                              Phase IA
+                            </p>
+                            <p className="font-semibold text-blue-600">
+                              {d.ai_phase === "deepseek"
+                                ? "DeepSeek"
+                                : d.ai_phase === "gpt4o"
+                                ? "GPT-4o"
+                                : "—"}
+                            </p>
+                          </div>
+                        </div>
+                      </CardBody>
+                    </Card>
                   </Link>
                 );
               })}

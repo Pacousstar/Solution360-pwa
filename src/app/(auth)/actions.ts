@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createSupabaseServerClient } from '@/lib/supabase-server'
+import { createClient } from '@/lib/supabase/server'
 
 export async function signup(formData: FormData) {
   const email = (formData.get('email') as string)?.trim()
@@ -13,7 +13,7 @@ export async function signup(formData: FormData) {
     return { error: 'Email et mot de passe requis' }
   }
 
-  const supabase = await createSupabaseServerClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -41,7 +41,7 @@ export async function login(formData: FormData) {
     return { error: 'Email et mot de passe requis' }
   }
 
-  const supabase = await createSupabaseServerClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -73,7 +73,7 @@ export async function login(formData: FormData) {
 }
 
 export async function logout() {
-  const supabase = await createSupabaseServerClient()
+  const supabase = await createClient()
   await supabase.auth.signOut()
   revalidatePath('/', 'layout')
   redirect('/login')

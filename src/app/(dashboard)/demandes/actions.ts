@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase/server";
 
 type WorkflowStep =
   | "analysis"
@@ -15,7 +15,7 @@ export async function mettreAJourDemande(formData: FormData) {
   const status = formData.get("status") as WorkflowStep | null;
   const ai_phase = formData.get("ai_phase") as AiPhase | null;
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

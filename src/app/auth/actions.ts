@@ -3,13 +3,13 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "../../lib/supabase-server";  // ✅ 3 niveaux
+import { createClient } from "@/lib/supabase/server";
 
 export async function signup(formData: FormData) {
   const email = (formData.get("email") as string)?.trim();
   const password = (formData.get("password") as string)?.trim();
   
-  const supabase = await createSupabaseServerClient();
+  const supabase = await createClient();
   const { error } = await supabase.auth.signUp({ email, password });
   
   if (error) throw error;

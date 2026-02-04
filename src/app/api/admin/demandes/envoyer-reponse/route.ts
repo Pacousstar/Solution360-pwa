@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { sendEmail, getResponseEmailTemplate } from '@/lib/emails';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -72,14 +73,16 @@ export async function POST(request: Request) {
     });
 
     if (!emailResult.success) {
-      console.error('⚠️ Erreur lors de l\'envoi de l\'email:', emailResult.error);
+      logger.error('⚠️ Erreur lors de l\'envoi de l\'email:', emailResult.error);
       // Ne pas bloquer la réponse si l'email échoue
     }
 
     return NextResponse.json({ success: true });
 
   } catch (error: any) {
-    console.error('Erreur envoyer-reponse:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    logger.error('Erreur envoyer-reponse:', error);
+    return NextResponse.json({ 
+      error: 'Erreur serveur. Veuillez réessayer.' 
+    }, { status: 500 });
   }
 }
