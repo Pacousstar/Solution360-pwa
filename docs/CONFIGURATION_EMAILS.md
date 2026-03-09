@@ -80,7 +80,7 @@ Ajouter dans `.env.local` :
 
 ```env
 # Resend Email Service
-RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+RESEND_API_KEY=re_U6iJqftw_QFtiJNtaN1AS87EAhZZLpsFx
 
 # URL de l'application (pour les liens dans les emails)
 NEXT_PUBLIC_URL=http://localhost:3000
@@ -96,7 +96,7 @@ NEXT_PUBLIC_URL=http://localhost:3000
    - **Environment** : Production, Preview, Development (tous)
 4. **Ajouter aussi** :
    - **Key** : `NEXT_PUBLIC_URL`
-   - **Value** : `https://votre-domaine.vercel.app` (ou votre domaine custom)
+   - **Value** : `solution360-pwa.vercel.app` (ou votre domaine custom)
    - **Environment** : Production, Preview, Development
 
 ---

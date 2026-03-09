@@ -222,3 +222,6 @@ Fichiers actuels à vérifier en priorité :
 Ensuite lancez : npm run build et envoyez-moi les erreurs si il y en a.
 
 💡 ASTUCE : Gardez ce message dans un fichier CONTEXT.md à la racine de votre projet pour les futures conversations ! 🎯
+
+
+voici mon repot : https://github.com/Pacousstar/Solution360-pwa

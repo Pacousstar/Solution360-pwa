@@ -21,7 +21,7 @@ export async function sendEmail({
   to,
   subject,
   html,
-  from = 'Solution360° <noreply@solution360.app>', // À changer selon votre domaine configuré dans Resend
+  from = 'Solution360° <onboarding@resend.dev>', // Domaine de test Resend (à changer quand domaine custom configuré)
 }: EmailOptions) {
   try {
     // Si pas de clé API ou resend non initialisé, logger sans envoyer (mode développement)
@@ -152,7 +152,11 @@ export function getQuoteEmailTemplate({
   requestId: string;
   baseUrl?: string;
 }): string {
-  const appUrl = baseUrl || process.env.NEXT_PUBLIC_URL || 'https://solution360.app';
+  let appUrl = baseUrl || process.env.NEXT_PUBLIC_URL || 'https://solution360.app';
+  // Ajouter https:// si manquant
+  if (appUrl && !appUrl.startsWith('http')) {
+    appUrl = `https://${appUrl}`;
+  }
   const demandesUrl = `${appUrl}/demandes/${requestId}`;
   
   const formattedPrice = new Intl.NumberFormat('fr-FR', {
@@ -218,7 +222,11 @@ export function getResponseEmailTemplate({
   requestId: string;
   baseUrl?: string;
 }): string {
-  const appUrl = baseUrl || process.env.NEXT_PUBLIC_URL || 'https://solution360.app';
+  let appUrl = baseUrl || process.env.NEXT_PUBLIC_URL || 'https://solution360.app';
+  // Ajouter https:// si manquant
+  if (appUrl && !appUrl.startsWith('http')) {
+    appUrl = `https://${appUrl}`;
+  }
   const demandesUrl = `${appUrl}/demandes/${requestId}`;
 
   const content = `
@@ -266,7 +274,11 @@ export function getPaymentConfirmationEmailTemplate({
   requestId: string;
   baseUrl?: string;
 }): string {
-  const appUrl = baseUrl || process.env.NEXT_PUBLIC_URL || 'https://solution360.app';
+  let appUrl = baseUrl || process.env.NEXT_PUBLIC_URL || 'https://solution360.app';
+  // Ajouter https:// si manquant
+  if (appUrl && !appUrl.startsWith('http')) {
+    appUrl = `https://${appUrl}`;
+  }
   const demandesUrl = `${appUrl}/demandes/${requestId}`;
 
   const formattedAmount = new Intl.NumberFormat('fr-FR', {
@@ -321,7 +333,11 @@ export function getDeliveryEmailTemplate({
   requestId: string;
   baseUrl?: string;
 }): string {
-  const appUrl = baseUrl || process.env.NEXT_PUBLIC_URL || 'https://solution360.app';
+  let appUrl = baseUrl || process.env.NEXT_PUBLIC_URL || 'https://solution360.app';
+  // Ajouter https:// si manquant
+  if (appUrl && !appUrl.startsWith('http')) {
+    appUrl = `https://${appUrl}`;
+  }
   const demandesUrl = `${appUrl}/demandes/${requestId}`;
 
   const content = `
