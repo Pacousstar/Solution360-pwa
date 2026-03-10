@@ -16,15 +16,6 @@ import { logger } from '@/lib/logger';
  */
 export async function POST(request: Request) {
   try {
-    // Rate limiting
-    const rateLimitResult = await checkRateLimit(request);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Trop de requêtes. Veuillez réessayer plus tard.' },
-        { status: 429 }
-      );
-    }
-
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -32,6 +23,14 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'Non authentifié' },
         { status: 401 }
+      );
+    }
+
+    // Rate limiting basé sur l'ID utilisateur
+    if (!checkRateLimit(`payment:${user.id}`, 3, 60000)) {
+      return NextResponse.json(
+        { error: 'Trop de requêtes. Veuillez réessayer plus tard.' },
+        { status: 429 }
       );
     }
 
@@ -143,23 +142,23 @@ export async function POST(request: Request) {
         requestId,
         userPhone
       );
-      
+
       if (!wavePayment.success || !wavePayment.url) {
         // Mettre à jour le statut du paiement en failed
         await supabase
           .from('payments')
           .update({ status: 'failed' })
           .eq('id', payment.id);
-        
+
         return NextResponse.json(
           { error: wavePayment.error || 'Erreur lors de la création du paiement Wave' },
           { status: 500 }
         );
       }
-      
+
       paymentUrl = wavePayment.url;
       // TODO: Extraire provider_id de la réponse Wave si disponible
-      
+
     } else if (paymentMethod === 'cinetpay') {
       const cinetPayment = await createCinetPay(
         demande.final_price,
@@ -167,20 +166,20 @@ export async function POST(request: Request) {
         userName,
         userEmail
       );
-      
+
       if (!cinetPayment.success || !cinetPayment.url) {
         // Mettre à jour le statut du paiement en failed
         await supabase
           .from('payments')
           .update({ status: 'failed' })
           .eq('id', payment.id);
-        
+
         return NextResponse.json(
           { error: cinetPayment.error || 'Erreur lors de la création du paiement CinetPay' },
           { status: 500 }
         );
       }
-      
+
       paymentUrl = cinetPayment.url;
       // TODO: Extraire provider_id de la réponse CinetPay si disponible
     } else {

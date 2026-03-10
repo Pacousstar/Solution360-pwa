@@ -14,7 +14,6 @@ const MessageThreadClient = dynamic(() => import("./MessageThreadClient"), {
       <p className="text-gray-500">Chargement de la messagerie...</p>
     </div>
   ),
-  ssr: false,
 });
 
 type RequestRow = {
@@ -269,8 +268,8 @@ export default async function DemandeDetailPage({ params }: PageProps) {
                     {request.ai_phase === "deepseek"
                       ? "DeepSeek"
                       : request.ai_phase === "gpt4o"
-                      ? "GPT-4o"
-                      : "Aucune"}
+                        ? "GPT-4o"
+                        : "Aucune"}
                   </p>
                 </CardBody>
               </Card>
@@ -388,7 +387,7 @@ export default async function DemandeDetailPage({ params }: PageProps) {
                           </p>
                         </div>
                       </div>
-                      
+
                       <div className="bg-white rounded-xl p-6 mb-4 border-2 border-emerald-200">
                         <div className="flex items-baseline justify-between mb-4">
                           <span className="text-sm font-semibold text-gray-600">
@@ -398,7 +397,7 @@ export default async function DemandeDetailPage({ params }: PageProps) {
                             {formatBudget(request.final_price)}
                           </span>
                         </div>
-                        
+
                         {request.price_justification && (
                           <div className="pt-4 border-t border-emerald-100">
                             <h3 className="text-sm font-semibold text-gray-900 mb-2">
@@ -431,9 +430,9 @@ export default async function DemandeDetailPage({ params }: PageProps) {
                             </div>
                           </div>
                           <Link href={`/demandes/${request.id}/paiement`}>
-                            <Button 
-                              variant="primary" 
-                              size="lg" 
+                            <Button
+                              variant="primary"
+                              size="lg"
                               className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all"
                               rightIcon={<CreditCard className="w-5 h-5" />}
                             >

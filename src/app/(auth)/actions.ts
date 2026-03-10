@@ -78,3 +78,27 @@ export async function logout() {
   revalidatePath('/', 'layout')
   redirect('/login')
 }
+
+export async function updateProfile(formData: FormData) {
+  const fullName = (formData.get('fullName') as string)?.trim()
+
+  if (!fullName) {
+    return { error: 'Le nom complet est requis' }
+  }
+
+  const supabase = await createClient()
+
+  const { error } = await supabase.auth.updateUser({
+    data: {
+      full_name: fullName,
+    },
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/profil')
+  revalidatePath('/', 'layout')
+  return { success: true }
+}

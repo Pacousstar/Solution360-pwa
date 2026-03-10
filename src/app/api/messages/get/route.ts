@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     const { data: users } = await supabase.auth.admin.listUsers();
 
     const messagesWithSenders = messages?.map((message) => {
-      const sender = users?.users.find((u) => u.id === message.sender_id);
+      const sender = users?.users.find((u: any) => u.id === message.sender_id);
       return {
         ...message,
         sender_email: sender?.email || "",

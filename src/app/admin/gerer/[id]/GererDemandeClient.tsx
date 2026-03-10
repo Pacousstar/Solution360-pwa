@@ -46,6 +46,7 @@ export default function GererDemandeClient({
   const [deliverables, setDeliverables] = useState(initialDeliverables);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [hasPayment, setHasPayment] = useState(false);
 
   // Récupérer l'ID de l'utilisateur actuel
   useEffect(() => {
@@ -71,7 +72,7 @@ export default function GererDemandeClient({
         .eq("request_id", demande.id)
         .eq("status", "completed")
         .limit(1);
-      
+
       setHasPayment((payments?.length || 0) > 0);
     };
     checkPayment();
@@ -274,13 +275,13 @@ L'équipe Solution360°`,
   const updateStatus = async (newStatus: string) => {
     setUpdating(true);
     setMessage("");
-    
+
     const supabase = createClient();
 
     // Vérifier si un paiement est confirmé (pour in_production)
     let paymentConfirmed = false;
     let hasPaymentRecord = false;
-    
+
     if (newStatus === 'in_production') {
       const { data: payments } = await supabase
         .from('payments')
@@ -288,11 +289,11 @@ L'équipe Solution360°`,
         .eq('request_id', demande.id)
         .order('created_at', { ascending: false })
         .limit(1);
-      
+
       hasPaymentRecord = (payments?.length || 0) > 0;
       paymentConfirmed = payments?.some(p => p.status === 'completed') || false;
     }
-    
+
     // ✅ VALIDATION RÈGLES MÉTIER (PRIORITÉ ABSOLUE)
     const validation = validateStatusChange(
       demande.status || 'pending',
@@ -306,7 +307,7 @@ L'équipe Solution360°`,
     if (!validation.valid) {
       setMessage(validation.error || '❌ Validation échouée');
       setUpdating(false);
-      
+
       // Rediriger vers l'onglet approprié selon l'erreur
       if (validation.error?.includes('devis') || validation.error?.includes('prix')) {
         setActiveTab("tarification");
@@ -394,23 +395,23 @@ L'équipe Solution360°`,
   };
 
   const formatStatus = (s: string | null) =>
-    ({
-      pending: "⏳ En attente",
-      draft: "🖊️ Brouillon",
-      analysis: "🤖 En analyse",
-      awaiting_payment: "💳 Attente Paiement",
-      in_production: "⚙️ En production",
-      delivered: "✅ Livré",
-      cancelled: "❌ Annulé",
-    }[s || ""] || s || "❓");
+  ({
+    pending: "⏳ En attente",
+    draft: "🖊️ Brouillon",
+    analysis: "🤖 En analyse",
+    awaiting_payment: "💳 Attente Paiement",
+    in_production: "⚙️ En production",
+    delivered: "✅ Livré",
+    cancelled: "❌ Annulé",
+  }[s || ""] || s || "❓");
 
   const formatCurrency = (n: number | null) =>
     n
       ? new Intl.NumberFormat("fr-FR", {
-          style: "currency",
-          currency: "XOF",
-          maximumFractionDigits: 0,
-        }).format(n)
+        style: "currency",
+        currency: "XOF",
+        maximumFractionDigits: 0,
+      }).format(n)
       : "—";
 
   const tabs = [
@@ -464,13 +465,12 @@ L'équipe Solution360°`,
         {/* Message */}
         {message && (
           <div
-            className={`mx-auto max-w-2xl p-6 rounded-3xl shadow-xl mb-8 text-center font-bold text-xl ${
-              message.includes("✅") || message.includes("📎")
+            className={`mx-auto max-w-2xl p-6 rounded-3xl shadow-xl mb-8 text-center font-bold text-xl ${message.includes("✅") || message.includes("📎")
                 ? "bg-emerald-100 border-4 border-emerald-400 text-emerald-800"
                 : message.includes("⏳")
-                ? "bg-blue-100 border-4 border-blue-400 text-blue-800"
-                : "bg-red-100 border-4 border-red-400 text-red-800"
-            }`}
+                  ? "bg-blue-100 border-4 border-blue-400 text-blue-800"
+                  : "bg-red-100 border-4 border-red-400 text-red-800"
+              }`}
           >
             {message}
           </div>
@@ -500,11 +500,10 @@ L'équipe Solution360°`,
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 min-w-[150px] px-6 py-4 font-bold text-lg transition-all ${
-                  activeTab === tab.id
+                className={`flex-1 min-w-[150px] px-6 py-4 font-bold text-lg transition-all ${activeTab === tab.id
                     ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg"
                     : "text-gray-700 hover:bg-orange-50"
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -744,10 +743,9 @@ L'équipe Solution360°`,
                         disabled={updating || demande.status === s}
                         className={`
                           p-8 rounded-3xl font-black text-xl shadow-2xl transition-all hover:shadow-3xl hover:scale-[1.02]
-                          ${
-                            demande.status === s
-                              ? "bg-gradient-to-r from-gray-400 to-gray-500 text-white cursor-default shadow-lg"
-                              : `bg-gradient-to-r ${color} text-white`
+                          ${demande.status === s
+                            ? "bg-gradient-to-r from-gray-400 to-gray-500 text-white cursor-default shadow-lg"
+                            : `bg-gradient-to-r ${color} text-white`
                           }
                           ${updating ? "opacity-50 cursor-not-allowed scale-95" : ""}
                         `}

@@ -9,6 +9,7 @@ import Link from 'next/link';
 
 type RequestRow = {
   id: string;
+  user_id: string;
   title: string;
   final_price: number | null;
   status: string | null;
@@ -47,7 +48,7 @@ export default function PaiementPage() {
         // Charger la demande
         const { data: demande, error: demandeError } = await supabase
           .from('requests')
-          .select('id, title, final_price, status')
+          .select('id, user_id, title, final_price, status')
           .eq('id', requestId)
           .single();
 
@@ -251,19 +252,16 @@ export default function PaiementPage() {
               <button
                 type="button"
                 onClick={() => setPaymentMethod('wave')}
-                className={`w-full p-4 border-2 rounded-lg transition-all text-left ${
-                  paymentMethod === 'wave'
+                className={`w-full p-4 border-2 rounded-lg transition-all text-left ${paymentMethod === 'wave'
                     ? 'border-orange-500 bg-orange-50'
                     : 'border-gray-200 hover:border-gray-300'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded ${
-                    paymentMethod === 'wave' ? 'bg-orange-500' : 'bg-gray-200'
-                  }`}>
-                    <Smartphone className={`w-5 h-5 ${
-                      paymentMethod === 'wave' ? 'text-white' : 'text-gray-600'
-                    }`} />
+                  <div className={`p-2 rounded ${paymentMethod === 'wave' ? 'bg-orange-500' : 'bg-gray-200'
+                    }`}>
+                    <Smartphone className={`w-5 h-5 ${paymentMethod === 'wave' ? 'text-white' : 'text-gray-600'
+                      }`} />
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-900">Wave</h3>
@@ -281,19 +279,16 @@ export default function PaiementPage() {
               <button
                 type="button"
                 onClick={() => setPaymentMethod('cinetpay')}
-                className={`w-full p-4 border-2 rounded-lg transition-all text-left ${
-                  paymentMethod === 'cinetpay'
+                className={`w-full p-4 border-2 rounded-lg transition-all text-left ${paymentMethod === 'cinetpay'
                     ? 'border-orange-500 bg-orange-50'
                     : 'border-gray-200 hover:border-gray-300'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded ${
-                    paymentMethod === 'cinetpay' ? 'bg-orange-500' : 'bg-gray-200'
-                  }`}>
-                    <CreditCard className={`w-5 h-5 ${
-                      paymentMethod === 'cinetpay' ? 'text-white' : 'text-gray-600'
-                    }`} />
+                  <div className={`p-2 rounded ${paymentMethod === 'cinetpay' ? 'bg-orange-500' : 'bg-gray-200'
+                    }`}>
+                    <CreditCard className={`w-5 h-5 ${paymentMethod === 'cinetpay' ? 'text-white' : 'text-gray-600'
+                      }`} />
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-900">CinetPay</h3>

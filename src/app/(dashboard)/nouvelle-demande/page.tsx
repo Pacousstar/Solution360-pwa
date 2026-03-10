@@ -207,11 +207,7 @@ export default function NouvelleDemandePage() {
                   id="budget"
                   name="budget"
                   type="text"
-                  label={
-                    <>
-                      Budget cible en FCFA <span className="text-gray-400 font-normal">(optionnel)</span>
-                    </>
-                  }
+                  label="Budget cible en FCFA (optionnel)"
                   placeholder="Ex. 500 000 – 1 000 000 FCFA"
                   value={budget}
                   onChange={(e) => setBudget(e.target.value)}

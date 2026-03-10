@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     ];
 
     const rows = (requests || []).map((request: any) => {
-      const userData = users?.users.find((u) => u.id === request.user_id);
+      const userData = users?.users.find((u: any) => u.id === request.user_id);
       const clientName =
         userData?.user_metadata?.full_name ||
         userData?.email?.split("@")[0] ||

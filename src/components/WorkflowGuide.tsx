@@ -141,8 +141,7 @@ export default function WorkflowGuide({
       completed: currentStatus === "delivered",
       current:
         currentStatus === "in_production" &&
-        hasDeliverables &&
-        currentStatus !== "delivered",
+        hasDeliverables,
     },
   ];
 
