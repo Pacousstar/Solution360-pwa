@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Card, CardBody, CardHeader, CardTitle, Badge, Button } from "@/components/ui";
-import { ArrowLeft, Download, Calendar, CreditCard, CheckCircle } from "lucide-react";
+import { ArrowLeft, Download, Calendar, CreditCard, CheckCircle, AlertCircle } from "lucide-react";
 import dynamic from "next/dynamic";
 import WorkflowTimelineClient from "@/components/WorkflowTimelineClient";
 import WorkflowGuideClient from "./WorkflowGuideClient";
@@ -10,8 +10,11 @@ import WorkflowGuideClient from "./WorkflowGuideClient";
 // Lazy loading du composant de messagerie
 const MessageThreadClient = dynamic(() => import("./MessageThreadClient"), {
   loading: () => (
-    <div className="h-[600px] flex items-center justify-center">
-      <p className="text-gray-500">Chargement de la messagerie...</p>
+    <div className="h-[400px] lg:h-[600px] flex items-center justify-center bg-gray-50 rounded-xl border border-dashed border-gray-300">
+      <div className="text-center">
+        <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+        <p className="text-sm text-gray-500 font-medium">Connexion à la messagerie...</p>
+      </div>
     </div>
   ),
 });
@@ -178,10 +181,12 @@ export default async function DemandeDetailPage({ params }: PageProps) {
           <CardHeader className="bg-gradient-to-r from-orange-500 to-sky-500 text-white">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <p className="text-xs uppercase tracking-wide opacity-90 mb-2">
+                <p className="text-[10px] uppercase tracking-widest opacity-80 mb-1 font-bold">
                   Demande #{request.id.slice(0, 8)}
                 </p>
-                <CardTitle className="text-3xl text-white">{request.title}</CardTitle>
+                <CardTitle className="text-xl md:text-3xl text-white font-black leading-tight">
+                  {request.title}
+                </CardTitle>
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="default" size="sm" className="bg-white/20 backdrop-blur-sm text-white border-white/30">
@@ -194,9 +199,9 @@ export default async function DemandeDetailPage({ params }: PageProps) {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-6 text-sm opacity-90">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
+            <div className="flex flex-wrap items-center gap-4 text-[10px] md:text-sm opacity-90 font-medium">
+              <div className="flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 Créée le {formatDate(request.created_at)}
               </div>
             </div>
@@ -411,34 +416,37 @@ export default async function DemandeDetailPage({ params }: PageProps) {
                       </div>
 
                       {request.status === "awaiting_payment" && (
-                        <div className="space-y-3">
-                          <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4">
-                            <div className="flex items-start gap-3">
-                              <div className="flex-shrink-0">
-                                <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center">
-                                  <CreditCard className="w-5 h-5 text-white" />
-                                </div>
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="font-bold text-orange-900 mb-1">
-                                  Action requise : Paiement en attente
-                                </h4>
-                                <p className="text-sm text-orange-700">
-                                  Pour lancer la production de votre projet, veuillez procéder au paiement du devis.
-                                </p>
-                              </div>
+                        <div className="space-y-4">
+                          <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-4 shadow-sm flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
+                              <AlertCircle className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-orange-900">Action requise : Paiement</p>
+                              <p className="text-xs text-orange-700">Réglez maintenant pour lancer la production.</p>
                             </div>
                           </div>
-                          <Link href={`/demandes/${request.id}/paiement`}>
-                            <Button
-                              variant="primary"
-                              size="lg"
-                              className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all"
-                              rightIcon={<CreditCard className="w-5 h-5" />}
-                            >
-                              💳 Payer maintenant
-                            </Button>
-                          </Link>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <Link href={`/demandes/${request.id}/paiement?method=wave`}>
+                              <Button
+                                variant="primary"
+                                className="w-full bg-blue-600 hover:bg-blue-700 shadow-lg"
+                                leftIcon={<span className="text-xl mr-1">🌊</span>}
+                              >
+                                Payer avec Wave
+                              </Button>
+                            </Link>
+                            <Link href={`/demandes/${request.id}/paiement?method=cinetpay`}>
+                              <Button
+                                variant="primary"
+                                className="w-full bg-orange-500 hover:bg-orange-600 shadow-lg"
+                                rightIcon={<CreditCard className="w-5 h-5" />}
+                              >
+                                CinetPay
+                              </Button>
+                            </Link>
+                          </div>
                         </div>
                       )}
 
@@ -482,88 +490,93 @@ export default async function DemandeDetailPage({ params }: PageProps) {
                   </CardBody>
                 </Card>
               </section>
-            )}
+            )
+            }
 
             {/* ✅ LIVRABLES FINAUX (adapté à votre structure) */}
-            {deliverables.length > 0 && (
-              <section className="border-t border-gray-200 pt-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
-                    <span className="text-lg">🎉</span>
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      Vos livrables ({deliverables.length})
-                    </h2>
-                    <p className="text-xs text-gray-500">
-                      Téléchargez ou consultez les fichiers finaux
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {deliverables.map((deliverable) => (
-                    <div
-                      key={deliverable.id}
-                      className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 hover:shadow-md transition"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <span className="text-2xl">
-                            {getFileIcon(deliverable.file_type)}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-gray-900 truncate">
-                              {deliverable.title}
-                            </h4>
-                            {deliverable.description && (
-                              <p className="text-xs text-gray-600 mt-1">
-                                {deliverable.description}
-                              </p>
-                            )}
-                            <p className="text-xs text-gray-500">
-                              {formatDate(deliverable.created_at)}
-                            </p>
-                          </div>
-                        </div>
-                        {deliverable.file_url && (
-                          <a
-                            href={deliverable.file_url}
-                            download
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="ml-4"
-                          >
-                            <Button variant="success" size="sm" leftIcon={<Download className="w-4 h-4" />}>
-                              Télécharger
-                            </Button>
-                          </a>
-                        )}
-                      </div>
+            {
+              deliverables.length > 0 && (
+                <section className="border-t border-gray-200 pt-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
+                      <span className="text-lg">🎉</span>
                     </div>
-                  ))}
-                </div>
-              </section>
-            )}
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900">
+                        Vos livrables ({deliverables.length})
+                      </h2>
+                      <p className="text-xs text-gray-500">
+                        Téléchargez ou consultez les fichiers finaux
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {deliverables.map((deliverable) => (
+                      <div
+                        key={deliverable.id}
+                        className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 hover:shadow-md transition"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <span className="text-2xl">
+                              {getFileIcon(deliverable.file_type)}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-gray-900 truncate">
+                                {deliverable.title}
+                              </h4>
+                              {deliverable.description && (
+                                <p className="text-xs text-gray-600 mt-1">
+                                  {deliverable.description}
+                                </p>
+                              )}
+                              <p className="text-xs text-gray-500">
+                                {formatDate(deliverable.created_at)}
+                              </p>
+                            </div>
+                          </div>
+                          {deliverable.file_url && (
+                            <a
+                              href={deliverable.file_url}
+                              download
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ml-4"
+                            >
+                              <Button variant="success" size="sm" leftIcon={<Download className="w-4 h-4" />}>
+                                Télécharger
+                              </Button>
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )
+            }
 
             {/* Message si status = delivered mais pas de livrables */}
-            {request.status === "delivered" && deliverables.length === 0 && (
-              <section className="border-t border-gray-200 pt-6">
-                <Card variant="bordered" className="bg-blue-50 border-blue-200">
-                  <CardBody className="p-6 text-center">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-200 mx-auto mb-3">
-                      <span className="text-2xl">📦</span>
-                    </div>
-                    <CardTitle className="text-sm mb-1">
-                      Livrables en préparation
-                    </CardTitle>
-                    <p className="text-xs text-gray-600">
-                      Les fichiers finaux seront disponibles très bientôt.
-                    </p>
-                  </CardBody>
-                </Card>
-              </section>
-            )}
+            {
+              request.status === "delivered" && deliverables.length === 0 && (
+                <section className="border-t border-gray-200 pt-6">
+                  <Card variant="bordered" className="bg-blue-50 border-blue-200">
+                    <CardBody className="p-6 text-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-200 mx-auto mb-3">
+                        <span className="text-2xl">📦</span>
+                      </div>
+                      <CardTitle className="text-sm mb-1">
+                        Livrables en préparation
+                      </CardTitle>
+                      <p className="text-xs text-gray-600">
+                        Les fichiers finaux seront disponibles très bientôt.
+                      </p>
+                    </CardBody>
+                  </Card>
+                </section>
+              )
+            }
 
             {/* Messagerie */}
             <section className="border-t border-gray-200 pt-6">
@@ -575,9 +588,9 @@ export default async function DemandeDetailPage({ params }: PageProps) {
               </div>
               <MessageThreadClient requestId={request.id} />
             </section>
-          </CardBody>
-        </Card>
-      </div>
-    </div>
+          </CardBody >
+        </Card >
+      </div >
+    </div >
   );
 }

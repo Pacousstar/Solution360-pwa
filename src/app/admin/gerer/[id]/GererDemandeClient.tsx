@@ -174,6 +174,8 @@ export default function GererDemandeClient({
       if (data.success) {
         setMessage("✅ Devis envoyé avec succès ! Statut changé à 'En attente de paiement'.");
         setDemande({ ...demande, status: "awaiting_payment", final_price: price, price_justification: priceJustification });
+        // Rediriger vers l'onglet Statut pour confirmer l'étape suivante
+        setActiveTab("statut");
         router.refresh();
       } else {
         setMessage(`❌ Erreur : ${data.error || "Envoi du devis échoué"}`);
@@ -327,6 +329,27 @@ L'équipe Solution360°`,
     if (!error) {
       setDemande({ ...demande, status: newStatus });
       setMessage(`✅ Statut → ${formatStatus(newStatus)}`);
+
+      // ✅ AUTOMATISATION : Envoi email si livré
+      if (newStatus === "delivered") {
+        try {
+          fetch("/api/admin/demandes/envoyer-reponse", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              requestId: demande.id,
+              adminResponse: `Bonjour ${clientName},\n\nExcellente nouvelle ! Votre projet "${demande.title}" est terminé et livré.\n\nVous pouvez maintenant télécharger tous les livrables depuis votre espace client.\n\nMerci de votre confiance !\nL'équipe Solution360°`,
+              clientEmail,
+              clientName,
+              requestTitle: demande.title,
+            }),
+          });
+          setMessage(`✅ Statut → Livré & Email de livraison envoyé !`);
+        } catch (e) {
+          console.error("Échec envoi email auto livraison", e);
+        }
+      }
+
       router.refresh();
     } else {
       setMessage(`❌ Erreur: ${error?.message}`);
@@ -382,6 +405,20 @@ L'équipe Solution360°`,
       if (response.ok) {
         setMessage("✅ Livrable publié ! Le client peut le télécharger.");
         setSelectedFile(null);
+
+        // ✅ AUTOMATISATION : Message automatique dans le chat
+        try {
+          const supabase = createClient();
+          await supabase.from("messages").insert({
+            request_id: demande.id,
+            sender_id: currentUserId,
+            sender_type: "admin",
+            content: `📦 **Nouveau livrable disponible** : Un fichier a été ajouté à votre projet. Vous pouvez le consulter dans l'onglet "Livrables".`,
+          });
+        } catch (e) {
+          console.error("Échec insertion message auto livrable", e);
+        }
+
         router.refresh();
       } else {
         const data = await response.json();
@@ -466,10 +503,10 @@ L'équipe Solution360°`,
         {message && (
           <div
             className={`mx-auto max-w-2xl p-6 rounded-3xl shadow-xl mb-8 text-center font-bold text-xl ${message.includes("✅") || message.includes("📎")
-                ? "bg-emerald-100 border-4 border-emerald-400 text-emerald-800"
-                : message.includes("⏳")
-                  ? "bg-blue-100 border-4 border-blue-400 text-blue-800"
-                  : "bg-red-100 border-4 border-red-400 text-red-800"
+              ? "bg-emerald-100 border-4 border-emerald-400 text-emerald-800"
+              : message.includes("⏳")
+                ? "bg-blue-100 border-4 border-blue-400 text-blue-800"
+                : "bg-red-100 border-4 border-red-400 text-red-800"
               }`}
           >
             {message}
@@ -500,12 +537,21 @@ L'équipe Solution360°`,
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 min-w-[150px] px-6 py-4 font-bold text-lg transition-all ${activeTab === tab.id
-                    ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg"
-                    : "text-gray-700 hover:bg-orange-50"
+                className={`flex-1 min-w-[150px] px-6 py-4 font-bold text-lg transition-all relative ${activeTab === tab.id
+                  ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg"
+                  : "text-gray-700 hover:bg-orange-50"
                   }`}
               >
-                {tab.label}
+                <div className="flex items-center justify-center gap-2">
+                  <span>{tab.icon}</span>
+                  <span>{tab.label}</span>
+                  {tab.id === "tarification" && demande.final_price && (
+                    <span className="absolute top-2 right-2 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white shadow-sm" title="Prix configuré"></span>
+                  )}
+                  {tab.id === "livrables" && deliverables.length > 0 && (
+                    <span className="absolute top-2 right-2 w-3 h-3 bg-blue-400 rounded-full border-2 border-white shadow-sm" title="Livrables présents"></span>
+                  )}
+                </div>
               </button>
             ))}
           </div>

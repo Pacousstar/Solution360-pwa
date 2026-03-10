@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardBody, CardHeader, CardTitle, Button, Input, Alert } from "@/components/ui";
 import { Send, MessageSquare, Loader2 } from "lucide-react";
 import { useMessageNotifications } from "@/hooks/useMessageNotifications";
+import { createClient } from "@/lib/supabase/client";
 
 // Fonction simple pour formater la date relative
 function formatRelativeTime(date: string): string {
@@ -64,7 +65,6 @@ export default function MessageThread({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [autoRefresh, setAutoRefresh] = useState(true);
 
   // Charger les messages
   const loadMessages = async () => {
@@ -139,32 +139,42 @@ export default function MessageThread({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  // Charger les messages au montage
+  // Charger les messages au montage et configurer le Realtime
   useEffect(() => {
     loadMessages();
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`room:${requestId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `request_id=eq.${requestId}`,
+        },
+        async (payload) => {
+          const newMessage = payload.new as Message;
+
+          // Si c'est notre propre message, il est déjà géré par handleSendMessage (ou sera rechargé)
+          // Mais pour plus de fluidité, on recharge tout pour avoir les infos sender
+          await loadMessages();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [requestId]);
-
-  // Auto-refresh toutes les 10 secondes
-  useEffect(() => {
-    if (!autoRefresh) return;
-
-    const interval = setInterval(() => {
-      loadMessages();
-    }, 10000); // 10 secondes
-
-    return () => clearInterval(interval);
-  }, [requestId, autoRefresh]);
 
   // Notifications pour nouveaux messages
   const { ToastContainer } = useMessageNotifications({
     requestId,
     currentUserId,
     messages,
-    enabled: autoRefresh,
+    enabled: true,
   });
 
   if (loading) {
@@ -182,117 +192,102 @@ export default function MessageThread({
     <>
       <ToastContainer />
       <Card className="h-full flex flex-col">
-      <CardHeader className="border-b">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-orange-500" />
-            Messagerie
-          </CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setAutoRefresh(!autoRefresh);
-              if (autoRefresh) {
-                loadMessages();
-              }
-            }}
-          >
-            {autoRefresh ? "Auto-actualisation ON" : "Auto-actualisation OFF"}
-          </Button>
-        </div>
-      </CardHeader>
+        <CardHeader className="border-b">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-orange-500" />
+              Messagerie
+            </CardTitle>
+          </div>
+        </CardHeader>
 
-      <CardBody className="flex-1 flex flex-col p-0 overflow-hidden">
-        {/* Zone de messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-          {messages.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p>Aucun message pour le moment.</p>
-              <p className="text-sm mt-2">Soyez le premier à envoyer un message !</p>
-            </div>
-          ) : (
-            messages.map((message) => {
-              const isOwnMessage = message.sender_id === currentUserId;
-              const isFromAdmin = message.sender_type === "admin";
+        <CardBody className="flex-1 flex flex-col p-0 overflow-hidden">
+          {/* Zone de messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+            {messages.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>Aucun message pour le moment.</p>
+                <p className="text-sm mt-2">Soyez le premier à envoyer un message !</p>
+              </div>
+            ) : (
+              messages.map((message) => {
+                const isOwnMessage = message.sender_id === currentUserId;
+                const isFromAdmin = message.sender_type === "admin";
 
-              return (
-                <div
-                  key={message.id}
-                  className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
-                >
+                return (
                   <div
-                    className={`max-w-[75%] rounded-2xl px-4 py-3 ${
-                      isOwnMessage
+                    key={message.id}
+                    className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[75%] rounded-2xl px-4 py-3 ${isOwnMessage
                         ? isFromAdmin
                           ? "bg-orange-500 text-white"
                           : "bg-green-500 text-white"
                         : "bg-white border border-gray-200 text-gray-900"
-                    }`}
-                  >
-                    <div className="flex items-start gap-2 mb-1">
-                      <span
-                        className={`text-xs font-semibold ${
-                          isOwnMessage ? "text-white/90" : "text-gray-600"
                         }`}
-                      >
-                        {message.sender_name || "Utilisateur"}
-                        {isFromAdmin && " (Admin)"}
-                      </span>
-                    </div>
-                    <p className="text-sm whitespace-pre-wrap break-words">
-                      {message.content}
-                    </p>
-                    <div
-                      className={`text-xs mt-2 ${
-                        isOwnMessage ? "text-white/70" : "text-gray-400"
-                      }`}
                     >
-                      {formatRelativeTime(message.created_at)}
+                      <div className="flex items-start gap-2 mb-1">
+                        <span
+                          className={`text-xs font-semibold ${isOwnMessage ? "text-white/90" : "text-gray-600"
+                            }`}
+                        >
+                          {message.sender_name || "Utilisateur"}
+                          {isFromAdmin && " (Admin)"}
+                        </span>
+                      </div>
+                      <p className="text-sm whitespace-pre-wrap break-words">
+                        {message.content}
+                      </p>
+                      <div
+                        className={`text-xs mt-2 ${isOwnMessage ? "text-white/70" : "text-gray-400"
+                          }`}
+                      >
+                        {formatRelativeTime(message.created_at)}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Zone de saisie */}
-        <div className="border-t bg-white p-4">
-          {error && (
-            <Alert variant="error" className="mb-4">
-              {error}
-            </Alert>
-          )}
-
-          <div className="flex gap-2">
-            <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-              placeholder="Tapez votre message..."
-              className="flex-1"
-              disabled={sending}
-            />
-            <Button
-              variant="primary"
-              onClick={handleSendMessage}
-              disabled={!newMessage.trim() || sending}
-              rightIcon={sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            >
-              {sending ? "Envoi..." : "Envoyer"}
-            </Button>
+                );
+              })
+            )}
+            <div ref={messagesEndRef} />
           </div>
-        </div>
-      </CardBody>
-    </Card>
+
+          {/* Zone de saisie */}
+          <div className="border-t bg-white p-4">
+            {error && (
+              <Alert variant="error" className="mb-4">
+                {error}
+              </Alert>
+            )}
+
+            <div className="flex gap-2">
+              <Input
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                placeholder="Tapez votre message..."
+                className="flex-1"
+                disabled={sending}
+              />
+              <Button
+                variant="primary"
+                onClick={handleSendMessage}
+                disabled={!newMessage.trim() || sending}
+                rightIcon={sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              >
+                {sending ? "Envoi..." : "Envoyer"}
+              </Button>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
     </>
   );
 }
