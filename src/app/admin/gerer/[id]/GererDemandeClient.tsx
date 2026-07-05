@@ -8,6 +8,7 @@ import { validateStatusChange } from "@/lib/validation/business-rules";
 import dynamic from "next/dynamic";
 import WorkflowTimelineClient from "@/components/WorkflowTimelineClient";
 import WorkflowGuide from "@/components/WorkflowGuide";
+import { useToastContext } from "@/components/ui/Toast";
 
 // Lazy loading du composant de messagerie
 const MessageThread = dynamic(() => import("@/components/MessageThread"), {
@@ -41,7 +42,7 @@ export default function GererDemandeClient({
   const [activeTab, setActiveTab] = useState<TabType>("statut");
   const [notes, setNotes] = useState(demande.admin_notes || "");
   const [updating, setUpdating] = useState(false);
-  const [message, setMessage] = useState("");
+  const toast = useToastContext();
   const [uploading, setUploading] = useState(false);
   const [deliverables, setDeliverables] = useState(initialDeliverables);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -99,18 +100,17 @@ export default function GererDemandeClient({
   // Afficher messages depuis URL
   useEffect(() => {
     if (uploadStatus === "success") {
-      setMessage("✅ Livrable uploadé avec succès !");
+      toast.showToast("Livrable uploadé avec succès !", "success");
     } else if (uploadStatus === "error") {
-      setMessage(`❌ Erreur : ${uploadMessage || "Upload échoué"}`);
-    } else if (statusUpdate === "updated") {
-      setMessage("✅ Statut mis à jour avec succès !");
+      toast.showToast(uploadMessage || "Upload échoué", "error");
+    } else if (statusUpdate === "success") {
+      toast.showToast("Statut mis à jour avec succès !", "success");
     }
   }, [uploadStatus, statusUpdate, uploadMessage]);
 
   // Lancer analyse IA
   const handleAnalyzeWithAI = async () => {
     setAnalyzing(true);
-    setMessage("⏳ Analyse IA en cours...");
 
     try {
       const response = await fetch("/api/analyze-request", {
@@ -123,17 +123,16 @@ export default function GererDemandeClient({
 
       if (data.ok && data.analysis) {
         setAiAnalysis(data.analysis);
-        setMessage("✅ Analyse IA terminée ! Consultez les résultats ci-dessous.");
-        // Si pas de prix final, pré-remplir avec l'estimation IA
+        toast.showToast("Analyse IA terminée ! Consultez les résultats ci-dessous.", "success");
         if (!finalPrice && data.analysis.estimated_price_fcfa) {
           setFinalPrice(data.analysis.estimated_price_fcfa.toString());
         }
         router.refresh();
       } else {
-        setMessage(`❌ Erreur : ${data.error || "Analyse IA échouée"}`);
+        toast.showToast(data.error || "Analyse IA échouée", "error");
       }
     } catch (error: any) {
-      setMessage(`❌ Erreur : ${error.message}`);
+      toast.showToast(error.message, "error");
     }
 
     setAnalyzing(false);
@@ -142,18 +141,17 @@ export default function GererDemandeClient({
   // Envoyer devis
   const handleSendQuote = async () => {
     if (!finalPrice || !priceJustification.trim()) {
-      setMessage("❌ Veuillez saisir le prix et la justification");
+      toast.showToast("Veuillez saisir le prix et la justification", "error");
       return;
     }
 
     const price = parseFloat(finalPrice.replace(/\s/g, ""));
     if (isNaN(price) || price <= 0) {
-      setMessage("❌ Prix invalide");
+      toast.showToast("Prix invalide", "error");
       return;
     }
 
     setSendingQuote(true);
-    setMessage("⏳ Envoi du devis...");
 
     try {
       const response = await fetch("/api/admin/demandes/envoyer-devis", {
@@ -172,16 +170,15 @@ export default function GererDemandeClient({
       const data = await response.json();
 
       if (data.success) {
-        setMessage("✅ Devis envoyé avec succès ! Statut changé à 'En attente de paiement'.");
+        toast.showToast("Devis envoyé avec succès !", "success");
         setDemande({ ...demande, status: "awaiting_payment", final_price: price, price_justification: priceJustification });
-        // Rediriger vers l'onglet Statut pour confirmer l'étape suivante
         setActiveTab("statut");
         router.refresh();
       } else {
-        setMessage(`❌ Erreur : ${data.error || "Envoi du devis échoué"}`);
+        toast.showToast(data.error || "Envoi du devis échoué", "error");
       }
     } catch (error: any) {
-      setMessage(`❌ Erreur : ${error.message}`);
+      toast.showToast(error.message, "error");
     }
 
     setSendingQuote(false);
@@ -190,12 +187,11 @@ export default function GererDemandeClient({
   // Envoyer réponse
   const handleSendResponse = async () => {
     if (!adminResponse.trim()) {
-      setMessage("❌ Veuillez rédiger un message");
+      toast.showToast("Veuillez rédiger un message", "error");
       return;
     }
 
     setSendingResponse(true);
-    setMessage("⏳ Envoi de la réponse...");
 
     try {
       const response = await fetch("/api/admin/demandes/envoyer-reponse", {
@@ -213,15 +209,15 @@ export default function GererDemandeClient({
       const data = await response.json();
 
       if (data.success) {
-        setMessage("✅ Réponse envoyée au client avec succès !");
+        toast.showToast("Réponse envoyée au client avec succès !", "success");
         setAdminResponse("");
         setResponseTemplate("");
         router.refresh();
       } else {
-        setMessage(`❌ Erreur : ${data.error || "Envoi de la réponse échoué"}`);
+        toast.showToast(data.error || "Envoi de la réponse échoué", "error");
       }
     } catch (error: any) {
-      setMessage(`❌ Erreur : ${error.message}`);
+      toast.showToast(error.message, "error");
     }
 
     setSendingResponse(false);
@@ -276,7 +272,6 @@ L'équipe Solution360°`,
 
   const updateStatus = async (newStatus: string) => {
     setUpdating(true);
-    setMessage("");
 
     const supabase = createClient();
 
@@ -307,7 +302,7 @@ L'équipe Solution360°`,
     );
 
     if (!validation.valid) {
-      setMessage(validation.error || '❌ Validation échouée');
+      toast.showToast(validation.error || 'Validation échouée', "error");
       setUpdating(false);
 
       // Rediriger vers l'onglet approprié selon l'erreur
@@ -328,7 +323,7 @@ L'équipe Solution360°`,
 
     if (!error) {
       setDemande({ ...demande, status: newStatus });
-      setMessage(`✅ Statut → ${formatStatus(newStatus)}`);
+      toast.showToast(`Statut → ${formatStatus(newStatus)}`, "success");
 
       // ✅ AUTOMATISATION : Envoi email si livré
       if (newStatus === "delivered") {
@@ -344,7 +339,7 @@ L'équipe Solution360°`,
               requestTitle: demande.title,
             }),
           });
-          setMessage(`✅ Statut → Livré & Email de livraison envoyé !`);
+          toast.showToast("Statut → Livré & Email de livraison envoyé !", "success");
         } catch (e) {
           console.error("Échec envoi email auto livraison", e);
         }
@@ -352,7 +347,7 @@ L'équipe Solution360°`,
 
       router.refresh();
     } else {
-      setMessage(`❌ Erreur: ${error?.message}`);
+      toast.showToast(error?.message || "Erreur lors du changement de statut", "error");
     }
     setUpdating(false);
   };
@@ -366,10 +361,10 @@ L'équipe Solution360°`,
       .eq("id", demande.id);
 
     if (!error) {
-      setMessage("✅ Notes sauvegardées");
+      toast.showToast("Notes sauvegardées", "success");
       router.refresh();
     } else {
-      setMessage(`❌ Erreur: ${error.message}`);
+      toast.showToast(error.message, "error");
     }
     setUpdating(false);
   };
@@ -378,18 +373,17 @@ L'équipe Solution360°`,
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      setMessage(`📎 Fichier sélectionné : ${file.name}`);
+      toast.showToast(`Fichier sélectionné : ${file.name}`, "info");
     }
   };
 
   const publishDeliverable = async () => {
     if (!selectedFile) {
-      setMessage("❌ Veuillez sélectionner un fichier d'abord");
+      toast.showToast("Veuillez sélectionner un fichier d'abord", "error");
       return;
     }
 
     setUploading(true);
-    setMessage("⏳ Publication en cours...");
 
     const formData = new FormData();
     formData.append("deliverable", selectedFile);
@@ -403,7 +397,7 @@ L'équipe Solution360°`,
       });
 
       if (response.ok) {
-        setMessage("✅ Livrable publié ! Le client peut le télécharger.");
+        toast.showToast("Livrable publié ! Le client peut le télécharger.", "success");
         setSelectedFile(null);
 
         // ✅ AUTOMATISATION : Message automatique dans le chat
@@ -422,10 +416,10 @@ L'équipe Solution360°`,
         router.refresh();
       } else {
         const data = await response.json();
-        setMessage(`❌ Erreur : ${data.error || "Upload échoué"}`);
+        toast.showToast(data.error || "Upload échoué", "error");
       }
     } catch (error: any) {
-      setMessage(`❌ Erreur : ${error.message}`);
+      toast.showToast(error.message, "error");
     }
 
     setUploading(false);
@@ -498,20 +492,6 @@ L'équipe Solution360°`,
             </div>
           </div>
         </div>
-
-        {/* Message */}
-        {message && (
-          <div
-            className={`mx-auto max-w-2xl p-6 rounded-3xl shadow-xl mb-8 text-center font-bold text-xl ${message.includes("✅") || message.includes("📎")
-              ? "bg-emerald-100 border-4 border-emerald-400 text-emerald-800"
-              : message.includes("⏳")
-                ? "bg-blue-100 border-4 border-blue-400 text-blue-800"
-                : "bg-red-100 border-4 border-red-400 text-red-800"
-              }`}
-          >
-            {message}
-          </div>
-        )}
 
         {/* Timeline et Guide du Workflow */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
