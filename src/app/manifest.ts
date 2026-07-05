@@ -8,8 +8,12 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Plateforme de consulting digital assistée par IA, de la demande au livrable premium.',
     start_url: '/',
     display: 'standalone',
+    display_override: ['standalone', 'minimal-ui'],
     background_color: '#ffffff',
-    theme_color: '#FF7A00', // Orange maître
+    theme_color: '#FF7A00',
+    scope: '/',
+    categories: ['business', 'productivity'],
+    orientation: 'portrait-primary',
     icons: [
       {
         src: '/icon-192.png',

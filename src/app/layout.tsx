@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/Toast";
+import { RegisterServiceWorker } from "@/components/RegisterServiceWorker";
 
 export const metadata: Metadata = {
   title: "Solution360° - Plateforme de gestion de projets",
@@ -25,7 +26,10 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className="antialiased">
-        <ToastProvider>{children}</ToastProvider>
+        <ToastProvider>
+          <RegisterServiceWorker />
+          {children}
+        </ToastProvider>
       </body>
     </html>
   );
