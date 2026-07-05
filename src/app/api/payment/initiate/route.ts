@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { isAdmin } from '@/lib/admin/permissions';
 import { checkRateLimit } from '@/lib/security';
-import { createWavePayment, createCinetPay } from '@/lib/payments';
+import { createWavePayment, createCinetPay, simulatePayment } from '@/lib/payments';
 import { logger } from '@/lib/logger';
 
 /**
@@ -11,7 +11,7 @@ import { logger } from '@/lib/logger';
  * 
  * Body:
  * - requestId: string (UUID)
- * - paymentMethod: 'wave' | 'cinetpay'
+ * - paymentMethod: 'wave' | 'cinetpay' | 'simulation'
  * - phone?: string (pour Wave)
  */
 export async function POST(request: Request) {
@@ -45,9 +45,9 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!paymentMethod || !['wave', 'cinetpay'].includes(paymentMethod)) {
+    if (!paymentMethod || !['wave', 'cinetpay', 'simulation'].includes(paymentMethod)) {
       return NextResponse.json(
-        { error: 'Méthode de paiement invalide. Utilisez "wave" ou "cinetpay"' },
+        { error: 'Méthode de paiement invalide. Utilisez "wave", "cinetpay" ou "simulation"' },
         { status: 400 }
       );
     }
@@ -101,6 +101,16 @@ export async function POST(request: Request) {
     const userEmail = user.email || profile?.email || '';
     const userName = profile?.full_name || userEmail.split('@')[0] || 'Client';
     const userPhone = phone || profile?.phone || '';
+
+    // Simulation (mode test sans API externe)
+    if (paymentMethod === 'simulation') {
+      await simulatePayment(requestId, user.id, demande.final_price);
+      return NextResponse.json({
+        success: true,
+        simulated: true,
+        message: 'Paiement simulé avec succès (mode test)',
+      });
+    }
 
     // Vérifier téléphone pour Wave
     if (paymentMethod === 'wave' && !userPhone) {

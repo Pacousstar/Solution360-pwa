@@ -29,7 +29,7 @@ export default function PaiementPage() {
   const [submitting, setSubmitting] = useState(false);
   const [request, setRequest] = useState<RequestRow | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisRow | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'wave' | 'cinetpay' | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'wave' | 'cinetpay' | 'simulation' | null>(null);
   const [phone, setPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -142,8 +142,11 @@ export default function PaiementPage() {
         throw new Error(data.error || 'Erreur lors de l\'initiation du paiement');
       }
 
-      if (data.payment_url) {
-        // Rediriger vers la page de paiement
+      if (data.simulated) {
+        setSuccess(data.message || 'Paiement simulé avec succès !');
+        setSubmitting(false);
+        setTimeout(() => router.push(`/demandes/${requestId}`), 2000);
+      } else if (data.payment_url) {
         window.location.href = data.payment_url;
       } else {
         throw new Error('URL de paiement non reçue');
@@ -301,6 +304,32 @@ export default function PaiementPage() {
                   )}
                 </div>
               </button>
+
+              {/* Simulation (mode test) */}
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('simulation')}
+                className={`w-full p-4 border-2 border-dashed rounded-lg transition-all text-left ${paymentMethod === 'simulation'
+                    ? 'border-emerald-500 bg-emerald-50'
+                    : 'border-gray-300 hover:border-emerald-400'
+                  }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded ${paymentMethod === 'simulation' ? 'bg-emerald-500' : 'bg-gray-200'
+                    }`}>
+                    <span className={`text-lg ${paymentMethod === 'simulation' ? 'text-white' : 'text-gray-600'}`}>🧪</span>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900">Mode Test</h3>
+                    <p className="text-xs text-gray-600">Simuler un paiement (sans API réelle)</p>
+                  </div>
+                  {paymentMethod === 'simulation' && (
+                    <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
+                      <span className="text-white text-xs">✓</span>
+                    </div>
+                  )}
+                </div>
+              </button>
             </div>
 
             {/* Champ téléphone pour Wave */}
@@ -354,6 +383,8 @@ export default function PaiementPage() {
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Traitement...
               </>
+            ) : paymentMethod === 'simulation' ? (
+              'Simuler le paiement'
             ) : (
               'Payer maintenant'
             )}
