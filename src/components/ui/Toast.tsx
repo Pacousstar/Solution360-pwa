@@ -2,7 +2,7 @@
 // ✅ Composant Toast réutilisable - Solution360°
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 
@@ -70,7 +70,7 @@ export function Toast({ id, message, type = 'info', duration = 5000, onClose }: 
   );
 }
 
-// Hook pour gérer les toasts
+// Hook local (composant isolé)
 export function useToast() {
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: ToastType }>>([]);
 
@@ -99,4 +99,47 @@ export function useToast() {
   );
 
   return { showToast, ToastContainer };
+}
+
+// Contexte global pour les toasts
+interface ToastContextValue {
+  showToast: (message: string, type?: ToastType) => void;
+}
+
+const ToastContext = createContext<ToastContextValue | null>(null);
+
+export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: ToastType }>>([]);
+
+  const showToast = useCallback((message: string, type: ToastType = 'info') => {
+    const id = Math.random().toString(36).substr(2, 9);
+    setToasts((prev) => [...prev, { id, message, type }]);
+  }, []);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
+
+  return (
+    <ToastContext.Provider value={{ showToast }}>
+      {children}
+      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
+        {toasts.map((toast) => (
+          <Toast
+            key={toast.id}
+            id={toast.id}
+            message={toast.message}
+            type={toast.type}
+            onClose={removeToast}
+          />
+        ))}
+      </div>
+    </ToastContext.Provider>
+  );
+}
+
+export function useToastContext() {
+  const ctx = useContext(ToastContext);
+  if (!ctx) throw new Error('useToastContext must be used within ToastProvider');
+  return ctx;
 }

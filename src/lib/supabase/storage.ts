@@ -2,9 +2,6 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { logger } from "@/lib/logger";
 
-/**
- * Crée un client Supabase serveur pour les opérations storage
- */
 async function getSupabaseClient() {
   const cookieStore = await cookies();
   return createServerClient(
@@ -27,22 +24,15 @@ async function getSupabaseClient() {
   );
 }
 
-/**
- * Upload un fichier livrable vers Supabase Storage avec validation sécurité
- * @param requestId - ID de la demande
- * @param userId - ID du propriétaire de la demande
- * @param file - Fichier à uploader
- * @returns Données du fichier uploadé + URL signée
- */
 export async function uploadDeliverable(
   requestId: string,
   userId: string,
+  adminId: string,
   file: File
 ) {
   const supabase = await getSupabaseClient();
 
-  // ✅ VALIDATION SÉCURITÉ
-  const maxSize = 50 * 1024 * 1024; // 50MB
+  const maxSize = 50 * 1024 * 1024;
   const allowedTypes = [
     "application/pdf",
     "application/zip",
@@ -62,12 +52,10 @@ export async function uploadDeliverable(
     );
   }
 
-  // ✅ NOM SÉCURISÉ (évite injection path traversal)
   const timestamp = Date.now();
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const filePath = `${userId}/${requestId}/${timestamp}_${safeName}`;
 
-  // ✅ UPLOAD VERS BUCKET
   const { data: uploadData, error: uploadError } = await supabase.storage
     .from("deliverables")
     .upload(filePath, file, {
@@ -76,85 +64,67 @@ export async function uploadDeliverable(
     });
 
   if (uploadError) {
-    logger.error("❌ Storage upload error:", uploadError);
+    logger.error("Storage upload error:", uploadError);
     throw new Error("Impossible de télécharger le fichier");
   }
 
-  logger.log("✅ Fichier uploadé:", uploadData.path);
-
-  // GÉNÉRER URL SIGNÉE (7 jours de validité)
-  const { data: signedData, error: signedError } = await supabase.storage
+  const { data: publicUrlData } = supabase.storage
     .from("deliverables")
-    .createSignedUrl(uploadData.path, 60 * 60 * 24 * 7);
+    .getPublicUrl(filePath);
 
-  if (signedError) {
-    logger.error("❌ Signed URL error:", signedError);
-    throw new Error("Impossible de générer le lien de téléchargement");
-  }
+  const fileUrl = publicUrlData.publicUrl;
 
-  // ENREGISTRER EN BASE DE DONNÉES
   const { error: dbError } = await supabase.from("deliverables").insert({
     request_id: requestId,
-    file_name: safeName,
+    title: file.name,
+    description: `Livrable uploadé le ${new Date().toLocaleDateString("fr-FR")}`,
+    file_url: fileUrl,
     file_path: uploadData.path,
-    file_size: file.size,
-    mime_type: file.type,
-    uploaded_by: (await supabase.auth.getUser()).data.user?.id,
+    file_type: file.type,
+    uploaded_by: adminId,
   });
 
   if (dbError) {
-    logger.error("❌ DB insert error:", dbError);
-    // Rollback : supprimer le fichier uploadé
-    await supabase.storage.from("deliverables").remove([uploadData.path]);
+    await supabase.storage.from("deliverables").remove([filePath]);
+    logger.error("DB insert error:", dbError);
     throw new Error("Erreur lors de l'enregistrement en base");
   }
 
-  return {
-    path: uploadData.path,
-    signedUrl: signedData.signedUrl,
-    fileName: safeName,
-  };
+  return { path: uploadData.path, fileUrl, fileName: safeName };
 }
 
-/**
- * Supprime un fichier du storage et de la base
- * @param filePath - Chemin du fichier dans le bucket
- */
-export async function deleteDeliverable(filePath: string) {
+export async function deleteDeliverable(id: string) {
   const supabase = await getSupabaseClient();
 
-  try {
-    // Supprimer de la DB
-    const { error: dbError } = await supabase
-      .from("deliverables")
-      .delete()
-      .eq("file_path", filePath);
+  const { data: row } = await supabase
+    .from("deliverables")
+    .select("file_path")
+    .eq("id", id)
+    .single();
 
-    if (dbError) {
-      logger.error("❌ DB delete error:", dbError);
-    }
+  const { error: dbError } = await supabase
+    .from("deliverables")
+    .delete()
+    .eq("id", id);
 
-    // Supprimer du storage
+  if (dbError) {
+    logger.error("DB delete error:", dbError);
+    throw new Error("Impossible de supprimer l'entrée en base");
+  }
+
+  if (row?.file_path) {
     const { error: storageError } = await supabase.storage
       .from("deliverables")
-      .remove([filePath]);
+      .remove([row.file_path]);
 
     if (storageError) {
-      logger.error("❌ Storage delete error:", storageError);
-      throw new Error("Impossible de supprimer le fichier");
+      logger.error("Storage delete error:", storageError);
     }
-
-    logger.log("✅ Fichier supprimé:", filePath);
-  } catch (error) {
-    logger.error("❌ Delete error:", error);
-    throw error;
   }
+
+  logger.log("Fichier supprimé:", id);
 }
 
-/**
- * Liste tous les livrables d'une demande
- * @param requestId - ID de la demande
- */
 export async function listDeliverables(requestId: string) {
   const supabase = await getSupabaseClient();
 
@@ -165,7 +135,7 @@ export async function listDeliverables(requestId: string) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    logger.error("❌ List deliverables error:", error);
+    logger.error("List deliverables error:", error);
     throw error;
   }
 
