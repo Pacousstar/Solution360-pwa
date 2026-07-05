@@ -1,5 +1,5 @@
 import { redirect, notFound } from "next/navigation";
-import { uploadDeliverable, listDeliverables } from "@/lib/supabase/storage";
+import { listDeliverables } from "@/lib/supabase/storage";
 import GererDemandeClient from "./GererDemandeClient";
 import { createClient } from "@/lib/supabase/server";
 import { isAdmin } from "@/lib/admin/permissions";
