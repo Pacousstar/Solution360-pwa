@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardBody, CardHeader, CardTitle, Button } from "@/components/ui";
 import { BarChart3, TrendingUp, DollarSign, FileText, Users, CreditCard } from "lucide-react";
+import { logger } from "@/lib/logger";
 import Link from "next/link";
 
 interface Stats {
@@ -49,7 +50,7 @@ export default function AnalyticsClient({ stats: initialStats }: Props) {
         setStats(data.stats);
       }
     } catch (error) {
-      console.error("Erreur lors du rafraîchissement:", error);
+      logger.error("Erreur lors du rafraîchissement:", error);
     } finally {
       setLoading(false);
     }

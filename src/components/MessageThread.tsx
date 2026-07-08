@@ -5,6 +5,7 @@ import { Card, CardBody, CardHeader, CardTitle, Button, Input, Alert } from "@/c
 import { Send, MessageSquare, Loader2 } from "lucide-react";
 import { useMessageNotifications } from "@/hooks/useMessageNotifications";
 import { createClient } from "@/lib/supabase/client";
+import { logger } from "@/lib/logger";
 
 // Fonction simple pour formater la date relative
 function formatRelativeTime(date: string): string {
@@ -95,7 +96,7 @@ export default function MessageThread({
       }
     } catch (err: any) {
       setError("Erreur de connexion");
-      console.error("Erreur lors du chargement des messages:", err);
+      logger.error("Erreur lors du chargement des messages:", err);
     } finally {
       setLoading(false);
     }
@@ -128,7 +129,7 @@ export default function MessageThread({
       }
     } catch (err: any) {
       setError("Erreur de connexion lors de l'envoi");
-      console.error("Erreur lors de l'envoi du message:", err);
+      logger.error("Erreur lors de l'envoi du message:", err);
     } finally {
       setSending(false);
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { logger } from "@/lib/logger";
 import WorkflowGuide from "@/components/WorkflowGuide";
 
 interface WorkflowGuideClientProps {
@@ -34,7 +35,7 @@ export default function WorkflowGuideClient({
 
         setHasPayment((payments?.length || 0) > 0);
       } catch (error) {
-        console.error("Erreur lors de la vérification du paiement:", error);
+        logger.error("Erreur lors de la vérification du paiement:", error);
       }
     };
 

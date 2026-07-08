@@ -5,6 +5,11 @@ import Logo from "@/components/Logo";
 import LogoText from "@/components/LogoText";
 import Link from "next/link";
 
+export const metadata = {
+  title: "Inscription - Solution360°",
+  description: "Créez votre compte client Solution360°",
+};
+
 export default async function RegisterPage() {
   const supabase = await createClient();
   const {

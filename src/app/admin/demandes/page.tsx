@@ -6,6 +6,11 @@ import { getUserRole } from "@/lib/admin/permissions";
 import DemandesAdminClient from "./DemandesAdminClient";
 import { logger } from "@/lib/logger";
 
+export const metadata = {
+  title: "Admin - Demandes - Solution360°",
+  description: "Gérez les demandes des clients - espace administrateur",
+};
+
 export default async function AdminDemandesPage() {
   // Client user pour l'authentification
   const supabase = await createClient();

@@ -79,7 +79,7 @@ export default function StatsContent({ demandes }: { demandes: Request[] }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-blue-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-orange-50/30 to-blue-50/30">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-lg sticky top-0 z-50 border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -87,7 +87,7 @@ export default function StatsContent({ demandes }: { demandes: Request[] }) {
             <div className="flex items-center gap-4">
               <Logo size="md" href="/" showText={false} />
               <div>
-                <p className="text-xs font-semibold text-purple-600 uppercase tracking-wider">
+                <p className="text-xs font-semibold text-orange-600 uppercase tracking-wider">
                   Statistiques
                 </p>
                 <h1 className="text-xl font-black text-gray-900">
@@ -97,7 +97,7 @@ export default function StatsContent({ demandes }: { demandes: Request[] }) {
             </div>
             <Link
               href="/demandes"
-              className="text-sm text-gray-600 hover:text-purple-600 transition-colors font-semibold"
+              className="text-sm text-gray-600 hover:text-orange-600 transition-colors font-semibold"
             >
               ← Retour
             </Link>
@@ -147,7 +147,7 @@ export default function StatsContent({ demandes }: { demandes: Request[] }) {
             </div>
 
             {/* Taux de réussite */}
-            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-3xl p-6 text-white shadow-xl hover:shadow-2xl hover:scale-105 transition-all">
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl p-6 text-white shadow-xl hover:shadow-2xl hover:scale-105 transition-all">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-3xl">🎯</span>
                 <span className="text-xs font-bold bg-white/20 px-2 py-1 rounded-full">
@@ -155,7 +155,7 @@ export default function StatsContent({ demandes }: { demandes: Request[] }) {
                 </span>
               </div>
               <p className="text-5xl font-black mb-2">{stats.tauxReussite}%</p>
-              <p className="text-sm text-purple-100">taux de livraison</p>
+              <p className="text-sm text-blue-100">taux de livraison</p>
             </div>
           </div>
         </section>
@@ -207,7 +207,7 @@ export default function StatsContent({ demandes }: { demandes: Request[] }) {
                     label: "En attente de paiement",
                     color: "bg-orange-500",
                   },
-                  in_production: { label: "En production", color: "bg-purple-500" },
+                  in_production: { label: "En production", color: "bg-orange-500" },
                   delivered: { label: "Livré", color: "bg-green-500" },
                   cancelled: { label: "Annulé", color: "bg-red-500" },
                 };
@@ -250,7 +250,7 @@ export default function StatsContent({ demandes }: { demandes: Request[] }) {
                   <div key={index} className="flex-1 flex flex-col items-center">
                     <div className="flex-1 flex items-end w-full">
                       <div
-                        className="w-full bg-gradient-to-t from-blue-500 to-purple-500 rounded-t-xl hover:from-blue-600 hover:to-purple-600 transition-all relative group"
+                        className="w-full bg-gradient-to-t from-blue-500 to-orange-500 rounded-t-xl hover:from-blue-600 hover:to-orange-600 transition-all relative group"
                         style={{ height: `${height}%` }}
                       >
                         <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-sm font-black text-gray-900 opacity-0 group-hover:opacity-100 transition-opacity">

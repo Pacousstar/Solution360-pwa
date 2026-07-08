@@ -6,14 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Card, CardBody, CardHeader, CardTitle, Button, Input, Alert } from '@/components/ui';
 import { ArrowLeft, CreditCard, Smartphone, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-
-type RequestRow = {
-  id: string;
-  user_id: string;
-  title: string;
-  final_price: number | null;
-  status: string | null;
-};
+import type { RequestRow } from '@/lib/types';
 
 type AnalysisRow = {
   estimated_price_fcfa: number | null;
@@ -72,7 +65,7 @@ export default function PaiementPage() {
           return;
         }
 
-        setRequest(demande);
+        setRequest(demande as RequestRow);
 
         // Charger l'analyse pour la justification du prix
         const { data: analyse } = await supabase
@@ -84,7 +77,7 @@ export default function PaiementPage() {
           .single();
 
         if (analyse) {
-          setAnalysis(analyse);
+          setAnalysis(analyse as AnalysisRow);
         }
 
         // Charger le profil pour le téléphone

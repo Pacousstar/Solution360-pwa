@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Card, CardBody, CardHeader, CardTitle, Input, Select, Button, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui";
 import { Search, LayoutGrid, Table2, Download, BarChart3 } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 interface Demande {
   id: string;
@@ -200,7 +201,7 @@ export default function DemandesAdminClient({
                       document.body.removeChild(a);
                     }
                   } catch (error) {
-                    console.error("Erreur lors de l'export:", error);
+                    logger.error("Erreur lors de l'export:", error);
                   }
                 }}
                 leftIcon={<Download className="w-4 h-4" />}

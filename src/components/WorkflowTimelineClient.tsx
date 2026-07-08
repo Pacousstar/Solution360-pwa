@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { logger } from "@/lib/logger";
 import WorkflowTimeline from "./WorkflowTimeline";
 
 interface WorkflowTimelineClientProps {
@@ -36,7 +37,7 @@ export default function WorkflowTimelineClient({
           );
         }
       } catch (error) {
-        console.error("Erreur lors de la récupération de l'historique:", error);
+        logger.error("Erreur lors de la récupération de l'historique:", error);
       } finally {
         setLoading(false);
       }

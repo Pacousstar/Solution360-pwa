@@ -5,6 +5,11 @@ import Logo from "@/components/Logo";
 import { Card, CardBody, CardHeader, CardTitle, Button, Badge } from "@/components/ui";
 import { ArrowRight, CheckCircle, Sparkles, Zap, Shield, Users, Clock, Star, TrendingUp, Award } from "lucide-react";
 
+export const metadata = {
+  title: "Solution360° - Consulting Digital par GSN EXPERTISES GROUP",
+  description: "Plateforme de gestion de projets de consulting digital. Soumettez vos demandes, suivez l'avancement et recevez vos livrables.",
+};
+
 export default async function HomePage() {
   // Vérifier si l'utilisateur est connecté
   const supabase = await createClient();

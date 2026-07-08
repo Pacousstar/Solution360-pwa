@@ -39,13 +39,31 @@ export async function POST(request: Request) {
 
     // Trouver le paiement par provider_id
     const providerId = transaction_id || cpm_trans_id;
-    const { data: payment, error: paymentError } = await supabase
-      .from('payments')
-      .select('*, requests(id, title, user_id, final_price)')
-      .or(`payment_provider_id.eq.${providerId},request_id.eq.${body.request_id || ''}`)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+    let payment, paymentError;
+
+    if (providerId) {
+      const result = await supabase
+        .from('payments')
+        .select('*, requests(id, title, user_id, final_price)')
+        .eq('payment_provider_id', providerId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      payment = result.data;
+      paymentError = result.error;
+    }
+
+    if (!payment && body.request_id) {
+      const result = await supabase
+        .from('payments')
+        .select('*, requests(id, title, user_id, final_price)')
+        .eq('request_id', body.request_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      payment = result.data;
+      paymentError = result.error;
+    }
 
     if (paymentError || !payment) {
       logger.error('❌ Paiement introuvable:', paymentError);

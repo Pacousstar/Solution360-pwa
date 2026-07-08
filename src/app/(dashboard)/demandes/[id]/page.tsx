@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Card, CardBody, CardHeader, CardTitle, Badge, Button } from "@/components/ui";
 import { ArrowLeft, Download, Calendar, CreditCard, CheckCircle, AlertCircle } from "lucide-react";
 import dynamic from "next/dynamic";
+import type { RequestRow, AnalysisRow, DeliverableRow } from "@/lib/types";
 import WorkflowTimelineClient from "@/components/WorkflowTimelineClient";
 import WorkflowGuideClient from "./WorkflowGuideClient";
 
@@ -18,44 +19,6 @@ const MessageThreadClient = dynamic(() => import("./MessageThreadClient"), {
     </div>
   ),
 });
-
-type RequestRow = {
-  id: string;
-  user_id: string | null;
-  title: string;
-  description: string;
-  budget_proposed: number | null;
-  status: string | null;
-  complexity: string | null;
-  urgency: string | null;
-  ai_phase: string | null;
-  final_price: number | null;
-  price_justification: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-};
-
-type AnalysisRow = {
-  id: string;
-  request_id: string;
-  ai_provider: string;
-  summary: string | null;
-  deliverables: string[] | null;
-  estimated_price_fcfa: number | null;
-  clarification_questions: string[] | null;
-  created_at: string | null;
-};
-
-// ✅ Type adapté à votre structure
-type DeliverableRow = {
-  id: string;
-  request_id: string;
-  title: string;
-  description: string | null;
-  file_url: string | null;
-  file_type: string | null;
-  created_at: string | null;
-};
 
 function formatStatus(s: string | null) {
   if (!s) return "Inconnu";

@@ -1,21 +1,14 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import type { RequestRow } from "@/lib/types";
 import DemandesContent from "./DemandesContent";
 
-type RequestRow = {
-  id: string;
-  user_id: string | null;
-  title: string;
-  description: string;
-  budget_proposed: number | null;
-  status: string | null;
-  complexity: string | null;
-  urgency: string | null;
-  ai_phase: string | null;
-  created_at: string | null;
-  updated_at: string | null;
+export const metadata: Metadata = {
+  title: "Mes demandes - Solution360°",
+  description: "Consultez et suivez vos demandes de consulting",
 };
 
 // Composant de chargement
@@ -72,15 +65,14 @@ async function DemandesData() {
 
   const demandes = (data || []) as RequestRow[];
 
-  // Récupérer les infos utilisateur
-  const { data: userData } = await supabase
-    .from("auth.users")
-    .select("raw_user_meta_data")
+  // Récupérer les infos utilisateur depuis la table profiles
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name")
     .eq("id", user.id)
     .single();
 
-  const fullName =
-    userData?.raw_user_meta_data?.full_name || user.email?.split("@")[0] || "User";
+  const fullName = profile?.full_name || user.email?.split("@")[0] || "User";
 
   if (error) {
     // Logger l'erreur mais continuer (afficher liste vide)

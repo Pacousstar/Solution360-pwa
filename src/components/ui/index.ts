@@ -8,9 +8,7 @@ export {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardBody,
-  CardFooter,
 } from './Card';
 export type { CardProps } from './Card';
 
@@ -22,9 +20,6 @@ export type { InputProps } from './Input';
 
 export { LoadingSpinner, ButtonSpinner } from './LoadingSpinner';
 export type { LoadingSpinnerProps } from './LoadingSpinner';
-
-export { Modal } from './Modal';
-export type { ModalProps } from './Modal';
 
 export { Toast, useToast, ToastProvider, useToastContext } from './Toast';
 export type { ToastProps, ToastType } from './Toast';

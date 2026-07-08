@@ -9,6 +9,7 @@ import dynamic from "next/dynamic";
 import WorkflowTimelineClient from "@/components/WorkflowTimelineClient";
 import WorkflowGuide from "@/components/WorkflowGuide";
 import { useToastContext } from "@/components/ui/Toast";
+import { logger } from "@/lib/logger";
 
 // Lazy loading du composant de messagerie
 const MessageThread = dynamic(() => import("@/components/MessageThread"), {
@@ -341,7 +342,7 @@ L'équipe Solution360°`,
           });
           toast.showToast("Statut → Livré & Email de livraison envoyé !", "success");
         } catch (e) {
-          console.error("Échec envoi email auto livraison", e);
+          logger.error("Échec envoi email auto livraison", e);
         }
       }
 
@@ -410,7 +411,7 @@ L'équipe Solution360°`,
             content: `📦 **Nouveau livrable disponible** : Un fichier a été ajouté à votre projet. Vous pouvez le consulter dans l'onglet "Livrables".`,
           });
         } catch (e) {
-          console.error("Échec insertion message auto livrable", e);
+          logger.error("Échec insertion message auto livrable", e);
         }
 
         router.refresh();

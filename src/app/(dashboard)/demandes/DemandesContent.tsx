@@ -1,26 +1,14 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, memo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Logo from "@/components/Logo";
 import { Card, CardHeader, CardTitle, CardBody, Badge, Button, Input } from "@/components/ui";
 import { Search, MessageSquare } from "lucide-react";
-
-type RequestRow = {
-  id: string;
-  user_id: string | null;
-  title: string;
-  description: string;
-  budget_proposed: number | null;
-  status: string | null;
-  complexity: string | null;
-  urgency: string | null;
-  ai_phase: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-};
+import type { RequestRow } from "@/lib/types";
+import { logger } from "@/lib/logger";
 
 type Props = {
   demandes: RequestRow[];
@@ -94,7 +82,7 @@ export default function DemandesContent({ demandes, userFullName }: Props) {
         setUnreadCounts(data.counts);
       }
     } catch (error) {
-      console.error("Erreur lors de la récupération des messages non lus:", error);
+      logger.error("Erreur lors de la récupération des messages non lus:", error);
     }
   }, [demandes]);
 

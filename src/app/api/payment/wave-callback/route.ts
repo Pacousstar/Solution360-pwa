@@ -36,13 +36,31 @@ export async function POST(request: Request) {
     const supabase = await createClient();
 
     // Trouver le paiement par provider_id ou request_id
-    const { data: payment, error: paymentError } = await supabase
-      .from('payments')
-      .select('*, requests(id, title, user_id, final_price)')
-      .or(`payment_provider_id.eq.${transaction_id},request_id.eq.${request_id || ''}`)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+    let payment, paymentError;
+
+    if (transaction_id) {
+      const result = await supabase
+        .from('payments')
+        .select('*, requests(id, title, user_id, final_price)')
+        .eq('payment_provider_id', transaction_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      payment = result.data;
+      paymentError = result.error;
+    }
+
+    if (!payment && request_id) {
+      const result = await supabase
+        .from('payments')
+        .select('*, requests(id, title, user_id, final_price)')
+        .eq('request_id', request_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      payment = result.data;
+      paymentError = result.error;
+    }
 
     if (paymentError || !payment) {
       logger.error('❌ Paiement introuvable:', paymentError);
